@@ -1,0 +1,12 @@
+# Django
+*.pyc
+__pycache__/
+.env
+
+# Virtual Environment
+venv/
+
+# OS / Editor files
+.DS_Store
+.vscode/
+.idea/
