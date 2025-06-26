@@ -18,7 +18,8 @@ from .serializers import (
     UserSerializer,
     TokenSerializer,
     PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer
+    PasswordResetConfirmSerializer,
+    ResendEmailSerializer
 )
 from django.contrib.auth import login as auth_login
 
@@ -99,7 +100,7 @@ def signup_view(request):
         send_mail(
             'Verify your email',
             f'Click the link to verify your email: {verify_url}',
-            settings.DEFAULT_FROM_MAIL,
+            settings.DEFAULT_FROM_EMAIL,
             [user.email],
             fail_silently=False,
         )
@@ -197,9 +198,13 @@ class PasswordResetConfirmView(APIView):
 # ✅ Resend Email Verification
 class ResendEmailVerificationView(APIView):
     permission_classes = [AllowAny]
+    serializer_class=ResendEmailSerializer
 
     def post(self, request):
-        email = request.data.get("email")
+        serializer=ResendEmailSerializer(data=request.data)
+
+        if serializer.is_valid():
+            email=serializer.validated_data['email']
         try:
             user = User.objects.get(email=email)
             if user.is_active:
@@ -209,13 +214,13 @@ class ResendEmailVerificationView(APIView):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = token_generator.make_token(user)
-        verify_url = f"https://yourfrontend.com/verify-email/{uid}/{token}/"
+        verify_url = f"http://127.0.0.1:8000/api/verify-email/{uid}/{token}/"
 
         send_mail(
             "Verify your email",
-            f"Click the link to verify your email:\n{verify_url}",
-            "no-reply@lms.com",
-            [email],
+            f"Click the link to verify your Account:\n{verify_url}",
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
             fail_silently=False,
         )
 

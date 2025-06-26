@@ -24,7 +24,7 @@ urlpatterns = [
     path('api/register/', RegisterView.as_view(), name='register'),
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/verify-email/<uidb64>/<token>/', VerifyEmailView.as_view(), name='verify-email'),
-    path('api/resend-verification/', ResendEmailVerificationView.as_view(), name='resend-verification'),
+    path('api/resend-verify-email/', ResendEmailVerificationView.as_view(), name='resend-verification'),
     path('api/profile/', UserProfileView.as_view(), name='user-profile'),
 
     # Google OAuth2 login

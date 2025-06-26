@@ -157,3 +157,6 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         password = self.validated_data["new_password"]
         self.user.set_password(password)
         self.user.save()
+
+class ResendEmailSerializer(serializers.Serializer):
+    email=serializers.EmailField()
