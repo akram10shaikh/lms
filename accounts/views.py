@@ -245,7 +245,7 @@ class SendOTPView(APIView):
         print(f"OTP for {phone} is {otp_obj.otp}")
 
         return Response({"message": "OTP sent successfully."})
-# Verify the opt    
+# Verify the otp   
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
 
