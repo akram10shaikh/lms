@@ -159,3 +159,10 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class ResendEmailSerializer(serializers.Serializer):
     email=serializers.EmailField()
+# Otp send and verify serializer
+class SendOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=15)
+
+class VerifyOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=15)
+    otp = serializers.CharField(max_length=6)
