@@ -11,6 +11,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
+from .models import PhoneOTP
+from .serializers import SendOTPSerializer, VerifyOTPSerializer
+from django.contrib.auth import login as django_login
 
 from .serializers import (
     RegisterSerializer,
@@ -225,3 +228,56 @@ class ResendEmailVerificationView(APIView):
         )
 
         return Response({"message": "Verification email resent successfully."})
+
+
+class SendOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data["phone_number"]
+
+        otp_obj, _ = PhoneOTP.objects.get_or_create(phone_number=phone)
+        otp_obj.generate_otp()
+
+        # In real case, send via SMS gateway like Twilio
+        print(f"OTP for {phone} is {otp_obj.otp}")
+
+        return Response({"message": "OTP sent successfully."})
+    
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data["phone_number"]
+        entered_otp = serializer.validated_data["otp"]
+
+        try:
+            otp_obj = PhoneOTP.objects.get(phone_number=phone)
+        except PhoneOTP.DoesNotExist:
+            return Response({"error": "Phone number not found."}, status=404)
+
+        if otp_obj.otp == entered_otp:
+            try:
+                user = User.objects.get(phone_number=phone)
+            except User.DoesNotExist:
+                return Response({"error": "User not registered."}, status=404)
+
+            if not user.is_active:
+                return Response({"error": "User is not active."}, status=403)
+
+            django_login(request, user)  # For session-based login
+            refresh = RefreshToken.for_user(user)  # For JWT
+            return Response({
+                "message": "Login successful.",
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            })
+
+        return Response({"error": "Invalid OTP."}, status=400)
+    
+def home_view(request):
+    return HttpResponse("Welcome to the LMS homepage.")

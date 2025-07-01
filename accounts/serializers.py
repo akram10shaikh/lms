@@ -5,6 +5,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator as token_generator
 from django.core.mail import send_mail
+from .models import PhoneOTP
 from django.conf import settings
 import requests
 
