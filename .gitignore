@@ -1,4 +1,6 @@
 # Django
+#
+
 *.pyc
 __pycache__/
 .env
