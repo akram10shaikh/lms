@@ -41,6 +41,9 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
 
+    def get(self,request):
+        return Response({"detail":"Please use POST to login."},status=200)
+
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -75,6 +78,7 @@ class VerifyEmailView(APIView):
 
 # ✅ Protected Profile (JWT Required)
 class UserProfileView(generics.RetrieveAPIView):
+    #queryset=User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
@@ -181,6 +185,7 @@ class PasswordResetRequestView(APIView):
 # ✅ Password Reset Confirm
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
+    serializer_class=PasswordResetConfirmSerializer
 
     def post(self, request, uidb64, token):
         password = request.data.get("password")
