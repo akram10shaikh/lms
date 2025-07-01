@@ -72,6 +72,7 @@ class VerifyEmailView(APIView):
 
 # ✅ Protected Profile (JWT Required)
 class UserProfileView(generics.RetrieveAPIView):
+    queryset=User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
