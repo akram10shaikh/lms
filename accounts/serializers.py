@@ -82,7 +82,7 @@ class TokenSerializer(serializers.Serializer):
         refresh = RefreshToken.for_user(user)
         return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
-# ✅ Google Sign-In Serializer
+#  Google Sign-In Serializer
 class GoogleAuthSerializer(serializers.Serializer):
     token = serializers.CharField()
 
@@ -109,7 +109,7 @@ class GoogleAuthSerializer(serializers.Serializer):
             "access": str(refresh.access_token),
         }
 
-# ✅ Password Reset Request Serializer
+#  Password Reset Request Serializer
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -134,7 +134,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
             fail_silently=False,
         )
 
-# ✅ Password Reset Confirm Serializer
+#  Password Reset Confirm Serializer
 class PasswordResetConfirmSerializer(serializers.Serializer):
     uidb64 = serializers.CharField()
     token = serializers.CharField()
