@@ -12,6 +12,9 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     ResendEmailVerificationView,
+    SendOTPView,
+    VerifyOTPView,
+    home_view
 )
 
 urlpatterns = [
@@ -33,6 +36,13 @@ urlpatterns = [
     # Password reset
     path('api/password-reset/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('api/password-reset-confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
+
+
+    # OTP Login
+    path("send-otp/", SendOTPView.as_view(), name="send-otp"),
+    path("verify-otp/", VerifyOTPView.as_view(), name="verify-otp"),
+
+    path("", home_view, name='home'),
 ]
 
 
