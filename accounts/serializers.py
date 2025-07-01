@@ -5,6 +5,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator as token_generator
 from django.core.mail import send_mail
+from .models import PhoneOTP
 from django.conf import settings
 import requests
 
@@ -160,3 +161,18 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class ResendEmailSerializer(serializers.Serializer):
     email=serializers.EmailField()
+
+# ✅ Phone number login otp send and verify Serializer
+class SendOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+
+class VerifyOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    otp = serializers.CharField()
+
+class SendOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=15)
+
+class VerifyOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField(max_length=15)
+    otp = serializers.CharField(max_length=6)
