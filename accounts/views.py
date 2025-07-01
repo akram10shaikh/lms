@@ -26,14 +26,14 @@ from django.contrib.auth import login as auth_login
 User = get_user_model()
 
 
-# ✅ Register + Send Email
+#  Register + Send Email
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
 
 
-# ✅ JWT Login + Active Check
+#  JWT Login + Active Check
 class LoginView(APIView):
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
@@ -51,7 +51,7 @@ class LoginView(APIView):
         return Response(token_data, status=status.HTTP_200_OK)
 
 
-# ✅ Email Verification Link
+#  Email Verification Link
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
 
@@ -70,7 +70,7 @@ class VerifyEmailView(APIView):
             return Response({"message": "Invalid or expired link."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ✅ Protected Profile (JWT Required)
+#  Protected Profile (JWT Required)
 class UserProfileView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
@@ -79,7 +79,7 @@ class UserProfileView(generics.RetrieveAPIView):
         return self.request.user
 
 
-# ✅ HTML-Based Signup Page (optional)
+#  HTML-Based Signup Page (optional)
 def signup_view(request):
     if request.method == 'POST':
         full_name=request.POST['fullname']
