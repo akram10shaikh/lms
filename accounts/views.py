@@ -1,10 +1,9 @@
-from django.shortcuts import render, redirect
 from django.contrib.auth import get_user_model, authenticate, login
+from django.contrib.auth import login as auth_login
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator as token_generator
-from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -12,7 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from .models import PhoneOTP
-from .serializers import SendOTPSerializer, VerifyOTPSerializer
+from .serializers import SendOTPSerializer, VerifyOTPSerializer, GoogleAuthSerializer
 from django.contrib.auth import login as django_login
 
 from .serializers import (
@@ -24,25 +23,29 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     ResendEmailSerializer
 )
-from django.contrib.auth import login as auth_login
 
 User = get_user_model()
 
-
-# ✅ Register + Send Email
+# Register + Send Email
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        return Response(
+            {"detail": "Registration successful. Please check your email to verify your account."},
+            status=status.HTTP_201_CREATED
+        )
 
 
-# ✅ JWT Login + Active Check
+# JWT Login + Active Check
 class LoginView(APIView):
     permission_classes = [AllowAny]
     serializer_class = LoginSerializer
-
-    def get(self,request):
-        return Response({"detail":"Please use POST to login."},status=200)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -57,7 +60,7 @@ class LoginView(APIView):
         return Response(token_data, status=status.HTTP_200_OK)
 
 
-# ✅ Email Verification Link
+# Email Verification Link
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
 
@@ -76,7 +79,7 @@ class VerifyEmailView(APIView):
             return Response({"message": "Invalid or expired link."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ✅ Protected Profile (JWT Required)
+# Protected Profile (JWT Required)
 class UserProfileView(generics.RetrieveAPIView):
     #queryset=User.objects.all()
     serializer_class = UserSerializer
@@ -85,77 +88,16 @@ class UserProfileView(generics.RetrieveAPIView):
     def get_object(self):
         return self.request.user
 
-
-# ✅ HTML-Based Signup Page (optional)
-def signup_view(request):
-    if request.method == 'POST':
-        full_name=request.POST['fullname']
-        email = request.POST['email']
-        phone_number=request.POST['phone_number']
-        date_of_birth=request.POST['date_of_birth']
-        password = request.POST['password']
-
-        if User.objects.filter(email=email).exists():
-            return HttpResponse("Email already registered.")
-
-        user = User.objects.create_user(full_name=full_name,email=email,phone_number=phone_number,date_of_birth=date_of_birth, password=password, is_active=False)
-
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = token_generator.make_token(user)
-        verify_url = request.build_absolute_uri(f'/verify-email/{uid}/{token}/')
-
-        send_mail(
-            'Verify your email',
-            f'Click the link to verify your email: {verify_url}',
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
-        return HttpResponse("Check your email to verify your account.")
-    return render(request, 'signup.html')
-
-
-# ✅ HTML-Based Email Verify
-def verify_email(request, uidb64, token):
-    try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except (User.DoesNotExist, ValueError, TypeError):
-        user = None
-
-    if user and token_generator.check_token(user, token):
-        user.is_active = True
-        user.save()
-        return HttpResponse('Email Verified: You can now log in.')
-    else:
-        return HttpResponse('Invalid or expired verification link.')
-
-
-# ✅ HTML-Based Login Page (optional)
-def login_view(request):
-    if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password']
-        user = authenticate(request, email=email, password=password)
-
-        if user is not None and user.is_active:
-            auth_login(request, user)
-            return HttpResponse("Logged in successfully")
-        else:
-            return HttpResponse("Invalid login or email not verified.")
-    return render(request, "login.html")
-
-
-# ✅ Google Login (placeholder)
 class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # You can integrate with Google OAuth2 libraries here.
-        return Response({"message": "Google login not yet implemented."})
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
-# ✅ Password Reset Request
+# Password Reset Request
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     serializer_class=PasswordResetRequestSerializer
@@ -182,7 +124,7 @@ class PasswordResetRequestView(APIView):
         return Response({"message": "Password reset email sent."})
 
 
-# ✅ Password Reset Confirm
+# Password Reset Confirm
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
     serializer_class=PasswordResetConfirmSerializer
@@ -203,7 +145,7 @@ class PasswordResetConfirmView(APIView):
             return Response({"error": "Invalid or expired token."}, status=400)
 
 
-# ✅ Resend Email Verification
+# Resend Email Verification
 class ResendEmailVerificationView(APIView):
     permission_classes = [AllowAny]
     serializer_class=ResendEmailSerializer
@@ -283,6 +225,3 @@ class VerifyOTPView(APIView):
             })
 
         return Response({"error": "Invalid OTP."}, status=400)
-    
-def home_view(request):
-    return HttpResponse("Welcome to the LMS homepage.")

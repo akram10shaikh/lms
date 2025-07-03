@@ -14,7 +14,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "role"]
+        fields = ["full_name","email","phone_number","date_of_birth", "role",]
 
 class RegisterSerializer(serializers.ModelSerializer):
     confirm_password=serializers.CharField(write_only=True)
@@ -95,12 +95,10 @@ class GoogleAuthSerializer(serializers.Serializer):
 
         user_info = response.json()
         email = user_info.get("email")
-        first_name = user_info.get("given_name", "")
-        last_name = user_info.get("family_name", "")
+        full_name = user_info.get("given_name", "")
 
         user, created = User.objects.get_or_create(email=email, defaults={
-            "first_name": first_name,
-            "last_name": last_name,
+            "full_name": full_name,
             "is_active": True,
         })
 
@@ -159,6 +157,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class ResendEmailSerializer(serializers.Serializer):
     email=serializers.EmailField()
+
 # Otp send and verify serializer
 class SendOTPSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=15)
