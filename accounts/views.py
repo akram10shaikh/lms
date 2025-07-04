@@ -51,12 +51,9 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
 
-        refresh = RefreshToken.for_user(user)
-        token_data = {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }
-        return Response(token_data, status=status.HTTP_200_OK)
+        token_serializer = TokenSerializer(context={"user": user})
+        tokens = token_serializer.validate({})
+        return Response(tokens, status=status.HTTP_200_OK)
 
 
 # Email Verification Link
@@ -115,7 +112,7 @@ class PasswordResetRequestView(APIView):
         send_mail(
             "Reset your password",
             f"Click the link to reset your password:\n{reset_url}",
-            "no-reply@lms.com",
+            settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
         )
