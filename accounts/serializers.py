@@ -44,7 +44,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Send email verification
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = token_generator.make_token(user)
-        verify_url = f"http://127.0.0.1:8000/api/verify-email/{uid}/{token}/"
+        verify_url = f"http://127.0.0.1:8000/accounts/verify-email/{uid}/{token}/"
 
         send_mail(
             "Verify Your Email",
@@ -122,7 +122,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = token_generator.make_token(user)
-        reset_url = f"https://yourdomain.com/reset-password/{uid}/{token}/"
+        reset_url = f"http://127.0.0.1:8000/accounts/password-reset-confirm/{uid}/{token}/"
 
         send_mail(
             "Reset Your Password",
@@ -135,8 +135,14 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 #  Password Reset Confirm Serializer
 class PasswordResetConfirmSerializer(serializers.Serializer):
     new_password = serializers.CharField(min_length=6, write_only=True)
+    confirm_password=serializers.CharField(min_length=6,write_only=True)
+    uidb64=serializers.CharField()
+    token=serializers.CharField()
 
     def validate(self, data):
+        if data["new_password"]!=data["confirm_password"]:
+            raise serializers.ValidationError("Passwords do not match.")
+        
         try:
             uid = force_str(urlsafe_base64_decode(data["uidb64"]))
             user = User.objects.get(pk=uid)
@@ -157,10 +163,3 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class ResendEmailSerializer(serializers.Serializer):
     email=serializers.EmailField()
 
-# Otp send and verify serializer
-class SendOTPSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(max_length=15)
-
-class VerifyOTPSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(max_length=15)
-    otp = serializers.CharField(max_length=6)
