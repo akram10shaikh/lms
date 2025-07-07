@@ -107,7 +107,7 @@ class PasswordResetRequestView(APIView):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = token_generator.make_token(user)
-        reset_url = f"http://127.0.0.1:8000/api/password-reset-confirm/{uid}/{token}/"
+        reset_url = f"http://127.0.0.1:8000/accounts/password-reset-confirm/{uid}/{token}/"
 
         send_mail(
             "Reset your password",
@@ -126,19 +126,17 @@ class PasswordResetConfirmView(APIView):
     serializer_class=PasswordResetConfirmSerializer
 
     def post(self, request, uidb64, token):
-        password = request.data.get("password")
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response({"error": "Invalid link."}, status=400)
+        data=request.data.copy()
+        data["uidb64"]=uidb64
+        data["token"]=token
 
-        if token_generator.check_token(user, token):
-            user.set_password(password)
-            user.save()
+        serializer=self.serializer_class(data=data)
+
+        if serializer.is_valid():
+            serializer.save()
             return Response({"message": "Password has been reset successfully."})
-        else:
-            return Response({"error": "Invalid or expired token."}, status=400)
+
+        return Response(serializer.errors,status=400)
 
 
 # Resend Email Verification
@@ -160,7 +158,7 @@ class ResendEmailVerificationView(APIView):
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = token_generator.make_token(user)
-        verify_url = f"http://127.0.0.1:8000/api/verify-email/{uid}/{token}/"
+        verify_url = f"http://127.0.0.1:8000/accounts/verify-email/{uid}/{token}/"
 
         send_mail(
             "Verify your email",
