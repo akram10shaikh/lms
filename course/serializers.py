@@ -114,3 +114,24 @@ class CourseFilterSerializer(serializers.ModelSerializer):
 
     def get_special_tag(self, obj):
         return obj.get_special_tag_display()
+
+# ---------- Course Detail ----------
+class CourseDetailSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+    special_tag = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = '__all__'
+
+    def get_rating(self, obj):
+        avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(avg_rating or 0, 1)
+
+    def get_review_count(self, obj):
+        return obj.reviews.count()
+
+    def get_special_tag(self, obj):
+        return obj.get_special_tag_display()
