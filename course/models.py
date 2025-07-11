@@ -12,6 +12,13 @@ class Category(models.Model):
 
 #Courses
 class Course(models.Model):
+    BADGE_CHOICES=[
+        ('top_author','Top Author'),
+        ('editors_choice',"Editor's Choice"),
+        ('best_seller','Best Seller'),
+        ("none",'None'),
+    ]
+
     category = models.ForeignKey(Category,related_name='courses',on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -24,6 +31,12 @@ class Course(models.Model):
     is_trending = models.BooleanField(default=False)
     is_new = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    special_tag=models.CharField(
+        max_length=20,
+        choices=BADGE_CHOICES,
+        default='none',
+        help_text="Special tag for the course (e.g., Top Author, Editor\'s Choice)"
+    )
 
     def __str__(self):
         return self.title

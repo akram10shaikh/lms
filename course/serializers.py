@@ -4,6 +4,8 @@ from .models import  Review, FAQ
 from django.contrib.auth import get_user_model
 
 from .models import Category
+from .models import Category,Course
+from django.db.models import Avg
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,6 +53,7 @@ class CreateReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You have already reviewed this course")
         return data
     
+<<<<<<< HEAD
 # ---------- FAQ Serializers ----------
 class FAQSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -74,3 +77,48 @@ class CreateFAQSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You have already submitted this question for this course.")
 
         return data
+=======
+class CourseSerializer(serializers.ModelSerializer):
+    rating=serializers.SerializerMethodField()
+    category=serializers.SlugRelatedField(slug_field='name',queryset=Category.objects.all())
+    special_tag=serializers.SerializerMethodField()
+
+    class Meta:
+        model=Course
+        fields='__all__'
+
+    def get_rating(self,obj):
+        avg_rating=obj.reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(avg_rating or 0, 1)
+    
+    def get_special_tag(self,obj):
+        return obj.get_special_tag_display()
+
+class CourseFilterSerializer(serializers.ModelSerializer):
+    thumbnail=serializers.ImageField(source='course_img')
+    current_price=serializers.DecimalField(source='discounted_price',max_digits=8,decimal_places=2)
+    old_price=serializers.DecimalField(source='price',max_digits=8,decimal_places=2)
+    rating=serializers.SerializerMethodField()
+    special_tag=serializers.SerializerMethodField()
+
+    class Meta:
+        model=Course
+        fields=[
+            'id',
+            'title',
+            'thumbnail',
+            'author',
+            'duration',
+            'current_price',
+            'old_price',
+            'rating',
+            'special_tag',
+        ]
+
+    def get_rating(self,obj):
+        avg_rating=obj.reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(avg_rating or 0, 1)
+    
+    def get_special_tag(self,obj):
+        return obj.get_special_tag_display()
+>>>>>>> 8f3ee436e60f4f15c3289a8809e3b814e1e0414a

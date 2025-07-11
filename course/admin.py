@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Category, Course, Review, FAQ
+from django.db.models import Avg
 
 # Register your models here.
 @admin.register(Category)
@@ -14,17 +15,23 @@ class CourseAdmin(admin.ModelAdmin):
         'id',
         'title',
         'author',
+        'average_rating',
         'category',
         'price',
         'discounted_price',
         'duration',
         'is_trending',
         'is_new',
-        'created_at'
+        'created_at',
+        'special_tag'
     )
     list_filter = ('category', 'is_trending', 'is_new')
     search_fields = ('title', 'author')
     ordering = ('-created_at',)
+
+    def average_rating(self,obj):
+        return obj.reviews.aggregate(avg=Avg('rating'))['avg']
+    
 
 
 @admin.register(Review)
