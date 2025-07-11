@@ -12,10 +12,11 @@ urlpatterns = [
     path('course/',CourseDetailAPIView.as_view(),name='course-detail'),
     path('top-new/',TopNewCourseAPIView.as_view(),name='top-new-courses'),
     path('top-new/<int:pk>/',TopNewCourseDetailAPIView.as_view(),name='top-new-course-detail'),
+    path('reviews/', ReviewListCreateView.as_view(), name='review-list-create'),
+    path('reviews/<int:pk>/', ReviewDetailView.as_view(), name='review-detail'),
 ]
 
 
 urlpatterns = [
-    path('reviews/', ReviewListCreateView.as_view(), name='review-list-create'),
-    path('reviews/<int:pk>/', ReviewDetailView.as_view(), name='review-detail'),
+    
 ]
