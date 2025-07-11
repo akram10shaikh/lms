@@ -1,11 +1,10 @@
 from django.db import models
-# Create your models here.
-from django.db import models
 from django.conf import settings  # For linking to your custom User model
 
+# Create your models here.
 #Categories (Areas of Interest)
 class Category(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100,unique=True)
     icon = models.ImageField(upload_to='categories/icons/', blank=True, null=True)
 
     def __str__(self):
