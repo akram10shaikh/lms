@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Review
+from .models import  Review, FAQ
 from django.contrib.auth import get_user_model
 
 from .models import Category
@@ -22,7 +22,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']  # Adjust fields as needed
+        fields = ['id', 'email']  # Adjust fields as needed
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -30,7 +30,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'course', 'rating', 'feedback', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'course', 'rating', 'feedback', 'created_at']
         read_only_fields = ['created_at', 'updated_at']
 
     def validate_rating(self, value):
@@ -49,4 +49,28 @@ class CreateReviewSerializer(serializers.ModelSerializer):
         course = data['course']
         if Review.objects.filter(user=user, course=course).exists():
             raise serializers.ValidationError("You have already reviewed this course")
+        return data
+    
+# ---------- FAQ Serializers ----------
+class FAQSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = FAQ
+        fields = ['id', 'user', 'course', 'question', 'answer', 'created_at']
+        read_only_fields = ['created_at']
+
+class CreateFAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = ['course', 'question', 'answer']
+
+    def validate(self, data):
+        user = self.context['request'].user
+        course = data['course']
+        question = data['question']
+
+        if FAQ.objects.filter(user=user, course=course, question__iexact=question).exists():
+            raise serializers.ValidationError("You have already submitted this question for this course.")
+
         return data

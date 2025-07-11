@@ -41,11 +41,15 @@ class Review(models.Model):
 
 #FAQ
 class FAQ(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,related_name='faqs',on_delete=models.CASCADE
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='faqs',
+        on_delete=models.CASCADE
     )
+    course = models.ForeignKey(Course, related_name='faqs', on_delete=models.CASCADE)  # Linked to Course
     question = models.CharField(max_length=300)
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.question
+          return f"{self.course.title} - {self.question}"
