@@ -52,6 +52,7 @@ class CreateReviewSerializer(serializers.ModelSerializer):
         if Review.objects.filter(user=user, course=course).exists():
             raise serializers.ValidationError("You have already reviewed this course")
         return data
+    
 class CourseDetailSerializer(serializers.ModelSerializer):
     rating=serializers.SerializerMethodField()
     category=serializers.SlugRelatedField(slug_field='name',queryset=Category.objects.all())
