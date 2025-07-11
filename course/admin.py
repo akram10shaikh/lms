@@ -4,13 +4,14 @@ from .models import Category, Course, Review, FAQ
 # Register your models here.
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name',)
+    list_display = ('id','name','icon')
     search_fields = ('name',)
 
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'title',
         'author',
         'category',

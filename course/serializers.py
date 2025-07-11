@@ -1,16 +1,27 @@
 from rest_framework import serializers
-from .models import Review
+from .models import Review, Category  # Keep both models
 from django.contrib.auth import get_user_model
+
+# --- Category Serializer ---
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+
+    def validate_name(self, value):
+        if Category.objects.filter(name=value).exists():
+            raise serializers.ValidationError("Category name must be unique.")
+        return value
 
 User = get_user_model()
 
-
+# --- User Serializer ---
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email']  # Adjust fields as needed
 
-
+# --- Review Serializer ---
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
@@ -24,7 +35,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Rating must be between 1 and 5")
         return value
 
-
+# --- Create Review Serializer ---
 class CreateReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
