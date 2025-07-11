@@ -1,4 +1,3 @@
-
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from .models import Review
@@ -9,7 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from .models import Category,Course
-from .serializers import CategorySerializer,CourseDetailSerializer,CourseFilterSerializer
+from .serializers import CategorySerializer,CourseSerializer,CourseFilterSerializer
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Avg
@@ -78,6 +77,23 @@ class CategoryDetailAPIView(APIView):
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class CourseListCreateAPI(APIView):
+    permission_classes=[permissions.AllowAny]
+
+    def get(self,request):
+        courses=Course.objects.all()
+        serializer=CourseSerializer(courses,many=True)
+        return Response(serializer.data)
+    
+    def post(self,request):
+        serializer=CourseSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
 class CourseDetailAPIView(APIView):
     permission_classes=[permissions.AllowAny]
 
@@ -91,22 +107,14 @@ class CourseDetailAPIView(APIView):
         course=self.get_object(pk)
         if not course:
             return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course)
+        serializer=CourseSerializer(course)
         return Response(serializer.data)
-    
-    def post(self,request):
-        serializer=CourseDetailSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
     def put(self,request,pk):
         course=self.get_object(pk)
         if not course:
             return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data)
+        serializer=CourseSerializer(course,data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -116,7 +124,7 @@ class CourseDetailAPIView(APIView):
         course=self.get_object(pk)
         if not course:
             return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data,partial=True)
+        serializer=CourseSerializer(course,data=request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -129,7 +137,7 @@ class CourseDetailAPIView(APIView):
         course.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class TopNewCourseAPIView(APIView):
+class TopNewCourseListAPIView(APIView):
     permission_classes=[permissions.AllowAny]
 
     def get(self,request):
@@ -155,22 +163,14 @@ class TopNewCourseDetailAPIView(APIView):
         course=self.get_object(pk)
         if not course:
             return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course)
+        serializer=CourseSerializer(course)
         return Response(serializer.data)
-    
-    def post(self,request):
-        serializer=CourseDetailSerializer(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
     def put(self,request,pk):
         course=self.get_object(pk)
         if not course:
             return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data)
+        serializer=CourseSerializer(course,data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -180,7 +180,7 @@ class TopNewCourseDetailAPIView(APIView):
         course=self.get_object(pk)
         if not course:
             return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data,partial=True)
+        serializer=CourseSerializer(course,data=request.data,partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
