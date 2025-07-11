@@ -1,19 +1,28 @@
-
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from .models import Review
-from .serializers import ReviewSerializer, CreateReviewSerializer
-from django.contrib.auth import get_user_model
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from .models import Category,Course
-from .serializers import CategorySerializer,CourseDetailSerializer,CourseFilterSerializer
+from rest_framework.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Avg
+from django.contrib.auth import get_user_model
 
+from .models import Category, Course, Review, FAQ
+from .serializers import (
+    CategorySerializer,
+    CourseSerializer,
+    CourseFilterSerializer,
+    CourseDetailSerializer,
+    ReviewSerializer,
+    CreateReviewSerializer,
+    FAQSerializer,
+    CreateFAQSerializer
+)
+
+User = get_user_model()
+
+# ---------------- CATEGORY VIEWS ----------------
 
 class CategoryListCreateAPIView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -64,137 +73,174 @@ class CategoryDetailAPIView(APIView):
 
     def patch(self, request, pk):
         category = Category.objects.get(pk=pk)
-        serializer = CategorySerializer(category, data=request.data, partial=True)  # 👈 partial=True!
+        serializer = CategorySerializer(category, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
     def delete(self, request, pk):
         try:
             category = Category.objects.get(pk=pk)
         except Category.DoesNotExist:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class CourseDetailAPIView(APIView):
-    permission_classes=[permissions.AllowAny]
+# ---------------- COURSE VIEWS ----------------
 
-    def get_object(self,pk):
+class CourseListCreateAPI(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        courses = Course.objects.all()
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = CourseSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CourseDetailAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get_object(self, pk):
         try:
             return Course.objects.get(pk=pk)
         except Course.DoesNotExist:
             return None
-        
-    def get(self,request,pk):
-        course=self.get_object(pk)
-        if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course)
-        return Response(serializer.data)
-    
-    def post(self,request):
-        serializer=CourseDetailSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    def put(self,request,pk):
-        course=self.get_object(pk)
+    def get(self, request, pk):
+        course = self.get_object(pk)
         if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    def patch(self,request,pk):
-        course=self.get_object(pk)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseSerializer(course)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        course = self.get_object(pk)
         if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data,partial=True)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseSerializer(course, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self,request,pk):
-        course=self.get_object(pk)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        course = self.get_object(pk)
         if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        course = self.get_object(pk)
+        if not course:
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
         course.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class TopNewCourseAPIView(APIView):
-    permission_classes=[permissions.AllowAny]
+class TopNewCourseListAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
 
-    def get(self,request):
-        thirty_days_ago=timezone.now()-timedelta(days=30)
-
-        courses=Course.objects.annotate(avg_rating=Avg('reviews__rating')).filter(
-            created_at__gte=thirty_days_ago,avg_rating__gte=4
+    def get(self, request):
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        courses = Course.objects.annotate(avg_rating=Avg('reviews__rating')).filter(
+            created_at__gte=thirty_days_ago, avg_rating__gte=4
         ).order_by('-avg_rating')
 
-        serializer=CourseFilterSerializer(courses,many=True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
-    
-class TopNewCourseDetailAPIView(APIView):
-    permission_classes=[permissions.AllowAny]
+        serializer = CourseFilterSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def get_object(self,pk):
+class TopNewCourseDetailAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get_object(self, pk):
         try:
             return Course.objects.get(pk=pk)
         except Course.DoesNotExist:
             return None
-        
-    def get(self,request,pk):
-        course=self.get_object(pk)
-        if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course)
-        return Response(serializer.data)
-    
-    def post(self,request):
-        serializer=CourseDetailSerializer(data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    def put(self,request,pk):
-        course=self.get_object(pk)
+    def get(self, request, pk):
+        course = self.get_object(pk)
         if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    def patch(self,request,pk):
-        course=self.get_object(pk)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseSerializer(course)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        course = self.get_object(pk)
         if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CourseDetailSerializer(course,data=request.data,partial=True)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseSerializer(course, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self,request,pk):
-        course=self.get_object(pk)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        course = self.get_object(pk)
         if not course:
-            return Response({'error':'Course not found'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseSerializer(course, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        course = self.get_object(pk)
+        if not course:
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
         course.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-User = get_user_model()
+# ---------------- TRENDING COURSES ----------------
 
+class TrendingCourseAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        trending_courses = Course.objects.filter(is_trending=True).annotate(
+            avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
+        serializer = CourseFilterSerializer(trending_courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class TrendingCourseDetailAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get_object(self, pk):
+        try:
+            return Course.objects.get(pk=pk, is_trending=True)
+        except Course.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        course = self.get_object(pk)
+        if not course:
+            return Response({'error': 'Trending course not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CourseDetailSerializer(course)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# ---------------- ALL COURSES ----------------
+
+class AllCoursesAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        courses = Course.objects.all().order_by('-created_at')
+        serializer = CourseFilterSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# ---------------- REVIEW VIEWS ----------------
 
 class ReviewListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -214,7 +260,6 @@ class ReviewListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -230,37 +275,37 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("You can only delete your own reviews")
         instance.delete()
 
-class TrendingCourseAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+# ---------------- FAQ VIEWS ----------------
 
-    def get(self, request):
-        trending_courses = Course.objects.filter(is_trending=True).annotate(
-            avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
+class FAQListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-        serializer = CourseFilterSerializer(trending_courses, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        queryset = FAQ.objects.all()
+        course_id = self.request.query_params.get('course_id')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        return queryset
 
-class TrendingCourseDetailAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateFAQSerializer
+        return FAQSerializer
 
-    def get_object(self, pk):
-        try:
-            return Course.objects.get(pk=pk, is_trending=True)
-        except Course.DoesNotExist:
-            return None
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
-    def get(self, request, pk):
-        course = self.get_object(pk)
-        if not course:
-            return Response({'error': 'Trending course not found'}, status=status.HTTP_404_NOT_FOUND)
+class FAQDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FAQ.objects.all()
+    serializer_class = FAQSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-        serializer = CourseDetailSerializer(course)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def perform_update(self, serializer):
+        if serializer.instance.user != self.request.user:
+            raise PermissionDenied("You can only update your own FAQs")
+        serializer.save()
 
-class AllCoursesAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        courses = Course.objects.all().order_by('-created_at')
-        serializer = CourseFilterSerializer(courses, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            raise PermissionDenied("You can only delete your own FAQs")
+        instance.delete()
