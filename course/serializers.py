@@ -53,11 +53,10 @@ class CreateReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You have already reviewed this course")
         return data
     
-class CourseDetailSerializer(serializers.ModelSerializer):
+class CourseSerializer(serializers.ModelSerializer):
     rating=serializers.SerializerMethodField()
     category=serializers.SlugRelatedField(slug_field='name',queryset=Category.objects.all())
     special_tag=serializers.SerializerMethodField()
-
 
     class Meta:
         model=Course
