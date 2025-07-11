@@ -229,3 +229,38 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
         if instance.user != self.request.user:
             raise PermissionDenied("You can only delete your own reviews")
         instance.delete()
+
+class TrendingCourseAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        trending_courses = Course.objects.filter(is_trending=True).annotate(
+            avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
+
+        serializer = CourseFilterSerializer(trending_courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class TrendingCourseDetailAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get_object(self, pk):
+        try:
+            return Course.objects.get(pk=pk, is_trending=True)
+        except Course.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        course = self.get_object(pk)
+        if not course:
+            return Response({'error': 'Trending course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CourseDetailSerializer(course)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AllCoursesAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        courses = Course.objects.all().order_by('-created_at')
+        serializer = CourseFilterSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
