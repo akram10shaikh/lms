@@ -2,14 +2,15 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from .models import Review
+from django.core.exceptions import PermissionDenied
 from .serializers import ReviewSerializer, CreateReviewSerializer
 from django.contrib.auth import get_user_model
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .models import Category
-from .serializers import CategorySerializer
+from .models import Category, FAQ
+from .serializers import CategorySerializer, FAQSerializer, CreateFAQSerializer
 
 
 class CategoryListCreateAPIView(APIView):
@@ -111,4 +112,38 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     def perform_destroy(self, instance):
         if instance.user != self.request.user:
             raise PermissionDenied("You can only delete your own reviews")
+        instance.delete()
+
+# ---------- FAQ Views ----------
+class FAQListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        queryset = FAQ.objects.all()
+        course_id = self.request.query_params.get('course_id')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        return queryset
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateFAQSerializer
+        return FAQSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class FAQDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FAQ.objects.all()
+    serializer_class = FAQSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_update(self, serializer):
+        if serializer.instance.user != self.request.user:
+            raise PermissionDenied("You can only update your own FAQs")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            raise PermissionDenied("You can only delete your own FAQs")
         instance.delete()
