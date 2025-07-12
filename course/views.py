@@ -2,12 +2,10 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
-from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Avg
 from django.contrib.auth import get_user_model
-
 from .models import Category, Course, Review, FAQ
 from .serializers import (
     CategorySerializer,
