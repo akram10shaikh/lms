@@ -24,9 +24,9 @@ class Course(models.Model):
     description = models.TextField()
     author = models.CharField(max_length=100)
     duration = models.CharField(max_length=50)
-    course_img = models.ImageField(upload_to='courses/thumbnails/')
-    price = models.DecimalField(max_digits=8, decimal_places=2)  # Old price
-    discounted_price = models.DecimalField(max_digits=8, decimal_places=2,null=True, blank=True)  # New price
+    thumbnail = models.ImageField(upload_to='courses/thumbnails/')
+    old_price = models.DecimalField(max_digits=8, decimal_places=2)  # Old price
+    current_price = models.DecimalField(max_digits=8, decimal_places=2,null=True, blank=True)  # New price
     discount_valid_until = models.DateTimeField(null=True, blank=True)
     is_trending = models.BooleanField(default=False)
     is_new = models.BooleanField(default=True)

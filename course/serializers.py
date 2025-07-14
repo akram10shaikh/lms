@@ -16,60 +16,6 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Category name must be unique.")
         return value
 
-# ---------- User ----------
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'email']  # Adjust if needed
-
-# ---------- Review ----------
-class ReviewSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = Review
-        fields = ['id', 'user', 'course', 'rating', 'feedback', 'created_at']
-        read_only_fields = ['created_at', 'updated_at']
-
-    def validate_rating(self, value):
-        if value < 1 or value > 5:
-            raise serializers.ValidationError("Rating must be between 1 and 5")
-        return value
-
-class CreateReviewSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Review
-        fields = ['course', 'rating', 'feedback']
-
-    def validate(self, data):
-        user = self.context['request'].user
-        course = data['course']
-        if Review.objects.filter(user=user, course=course).exists():
-            raise serializers.ValidationError("You have already reviewed this course")
-        return data
-
-# ---------- FAQ ----------
-class FAQSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = FAQ
-        fields = ['id', 'user', 'course', 'question', 'answer', 'created_at']
-        read_only_fields = ['created_at']
-
-class CreateFAQSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FAQ
-        fields = ['course', 'question', 'answer']
-
-    def validate(self, data):
-        user = self.context['request'].user
-        course = data['course']
-        question = data['question']
-        if FAQ.objects.filter(user=user, course=course, question__iexact=question).exists():
-            raise serializers.ValidationError("You have already submitted this question for this course.")
-        return data
-
 # ---------- Course ----------
 class CourseSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
@@ -88,9 +34,6 @@ class CourseSerializer(serializers.ModelSerializer):
         return obj.get_special_tag_display()
 
 class CourseFilterSerializer(serializers.ModelSerializer):
-    thumbnail = serializers.ImageField(source='course_img')
-    current_price = serializers.DecimalField(source='discounted_price', max_digits=8, decimal_places=2)
-    old_price = serializers.DecimalField(source='price', max_digits=8, decimal_places=2)
     rating = serializers.SerializerMethodField()
     special_tag = serializers.SerializerMethodField()
 
@@ -135,3 +78,58 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
     def get_special_tag(self, obj):
         return obj.get_special_tag_display()
+
+# ---------- User ----------
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email']  # Adjust if needed
+
+# ---------- Review ----------
+class ReviewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'user', 'course', 'rating', 'feedback', 'created_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value
+
+class CreateReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ['course', 'rating', 'feedback']
+
+    def validate(self, data):
+        user = self.context['request'].user
+        course = data['course']
+        if Review.objects.filter(user=user, course=course).exists():
+            raise serializers.ValidationError("You have already reviewed this course")
+        return data
+
+
+# ---------- FAQ ----------
+class FAQSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = FAQ
+        fields = ['id', 'user', 'course', 'question', 'answer', 'created_at']
+        read_only_fields = ['created_at']
+
+class CreateFAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = ['course', 'question', 'answer']
+
+    def validate(self, data):
+        user = self.context['request'].user
+        course = data['course']
+        question = data['question']
+        if FAQ.objects.filter(user=user, course=course, question__iexact=question).exists():
+            raise serializers.ValidationError("You have already submitted this question for this course.")
+        return data
