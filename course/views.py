@@ -11,7 +11,6 @@ from .serializers import (
     CategorySerializer,
     CourseSerializer,
     CourseFilterSerializer,
-    CourseDetailSerializer,
     ReviewSerializer,
     CreateReviewSerializer,
     FAQSerializer,
@@ -225,17 +224,7 @@ class TrendingCourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Trending course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseDetailSerializer(course)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-# ---------------- ALL COURSES ----------------
-
-class AllCoursesAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        courses = Course.objects.all().order_by('-created_at')
-        serializer = CourseFilterSerializer(courses, many=True)
+        serializer = CourseSerializer(course)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # ---------------- REVIEW VIEWS ----------------

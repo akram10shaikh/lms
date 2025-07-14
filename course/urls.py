@@ -8,7 +8,6 @@ from .views import (
     TopNewCourseDetailAPIView,
     TrendingCourseAPIView,
     TrendingCourseDetailAPIView,
-    AllCoursesAPIView,
     ReviewListCreateView,
     ReviewDetailView,
     FAQListCreateView,
@@ -31,9 +30,6 @@ urlpatterns = [
     # Trending Courses
     path('trending/', TrendingCourseAPIView.as_view(), name='trending-courses'),
     path('trending/<int:pk>/', TrendingCourseDetailAPIView.as_view(), name='trending-course-detail'),
-
-    # All Courses
-    path('all/', AllCoursesAPIView.as_view(), name='all-courses'),
 
     # Reviews
     path('reviews/', ReviewListCreateView.as_view(), name='review-list-create'),
