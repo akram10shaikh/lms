@@ -12,6 +12,14 @@ from .views import (
     ReviewDetailView,
     FAQListCreateView,
     FAQDetailView,
+
+
+    # Author
+    AuthorDetailAPIView, AuthorListCreateAPIView,
+
+    #Enrollment
+    EnrollCourseAPIView, UserEnrollmentListAPIView
+
 )
 
 urlpatterns = [
@@ -38,4 +46,13 @@ urlpatterns = [
     # FAQs
     path('faqs/', FAQListCreateView.as_view(), name='faq-list-create'),
     path('faqs/<int:pk>/', FAQDetailView.as_view(), name='faq-detail'),
+
+    #Authors
+    path('authors/', AuthorListCreateAPIView.as_view(), name='author-list'),
+    path('authors/<int:pk>/', AuthorDetailAPIView.as_view(), name='author-detail'),
+
+    #Enrollment
+    path('courses/<int:course_id>/enroll/', EnrollCourseAPIView.as_view(), name='enroll-course'),
+    path('enrollments/', UserEnrollmentListAPIView.as_view(), name='user-enrollments'),
 ]
+
