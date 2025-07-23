@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'course',
     'batch',
+    'content',
+    'progress',
 ]
 
 REST_FRAMEWORK = {
