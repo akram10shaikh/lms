@@ -22,5 +22,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),#All authentication-related routes from the accounts app
     path('courses/',include('course.urls')),
     path('batches/', include('batch.urls')),
+    path('api/quiz/', include('quiz.urls')),
+
 
 ]
