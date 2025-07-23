@@ -24,5 +24,5 @@ urlpatterns = [
     path('batches/', include('batch.urls')),
     path('content/', include('content.urls')),
     path('progress/', include('progress.urls')),
-
+    path('api/quiz/', include('quiz.urls')),
 ]
