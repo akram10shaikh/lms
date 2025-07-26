@@ -12,3 +12,7 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+# Ignore SQLite database files
+.db
+.sqlite3
