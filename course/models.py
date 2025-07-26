@@ -113,3 +113,4 @@ class Enrollment(models.Model):
 
     def __str__(self):
         return f"{self.user} enrolled in {self.course}"
+
