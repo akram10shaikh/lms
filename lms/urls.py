@@ -27,7 +27,7 @@ urlpatterns = [
     path('api/quiz/', include('quiz.urls')),
 <<<<<<< HEAD
 =======
-    path('api/', include('assignment.urls')),
+    path('api/assignment/', include('assignment.urls')),
 
 
 
