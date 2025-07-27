@@ -25,4 +25,11 @@ urlpatterns = [
     path('content/', include('content.urls')),
     path('progress/', include('progress.urls')),
     path('api/quiz/', include('quiz.urls')),
+<<<<<<< HEAD
+=======
+    path('api/', include('assignment.urls')),
+
+
+
+>>>>>>> 0398bee (Added Assignment section)
 ]
