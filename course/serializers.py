@@ -24,27 +24,27 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'bio','image']
 
 # ---------- Course ----------
-class CourseSerializer(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField()
-    category = serializers.SlugRelatedField(slug_field='name', queryset=Category.objects.all())
-    special_tag = serializers.SerializerMethodField()
-    author = AuthorSerializer(read_only=True)
-    author_id = serializers.PrimaryKeyRelatedField(
-        queryset=Author.objects.all(),
-        source='author',
-        write_only=True
-    )
+# class CourseSerializer(serializers.ModelSerializer):
+#     rating = serializers.SerializerMethodField()
+#     category = serializers.SlugRelatedField(slug_field='name', queryset=Category.objects.all())
+#     special_tag = serializers.SerializerMethodField()
+#     author = AuthorSerializer(read_only=True)
+#     author_id = serializers.PrimaryKeyRelatedField(
+#         queryset=Author.objects.all(),
+#         source='author',
+#         write_only=True
+#     )
 
-    class Meta:
-        model = Course
-        fields = '__all__'
+#     class Meta:
+#         model = Course
+#         fields = '__all__'
 
-    def get_rating(self, obj):
-        avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
-        return round(avg_rating or 0, 1)
+#     def get_rating(self, obj):
+#         avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
+#         return round(avg_rating or 0, 1)
 
-    def get_special_tag(self, obj):
-        return obj.get_special_tag_display()
+#     def get_special_tag(self, obj):
+#         return obj.get_special_tag_display()
 
 class CourseFilterSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
@@ -195,9 +195,13 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         return obj.get_special_tag_display()
 
     def get_is_enrolled(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return Enrollment.objects.filter(user=user, course=obj).exists()
+        # user = self.context['request'].user
+        # if user.is_authenticated:
+        #     return Enrollment.objects.filter(user=user, course=obj).exists()
+        # return False
+        request = self.context.get('request', None)
+        if request and request.user.is_authenticated:
+            return Enrollment.objects.filter(user=request.user, course=obj).exists()
         return False
 
 #-----Enrollment-----

@@ -11,7 +11,7 @@ from accounts.permissions import IsAdmin, IsStaff
 from .models import Category, Course, Review, FAQ, Enrollment, Author
 from .serializers import (
     CategorySerializer,
-    CourseSerializer,
+    CourseDetailSerializer,
     CourseFilterSerializer,
     ReviewSerializer,
     CreateReviewSerializer,
@@ -112,14 +112,14 @@ class TopNewCourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseSerializer(course)
+        serializer = CourseDetailSerializer(course)
         return Response(serializer.data)
 
     def put(self, request, pk):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseSerializer(course, data=request.data)
+        serializer = CourseDetailSerializer(course, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -129,7 +129,7 @@ class TopNewCourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseSerializer(course, data=request.data, partial=True)
+        serializer = CourseDetailSerializer(course, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -166,7 +166,7 @@ class TrendingCourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Trending course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseSerializer(course)
+        serializer = CourseDetailSerializer(course)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # ---------------- REVIEW VIEWS ----------------
@@ -246,7 +246,7 @@ class CourseListCreateAPI(APIView):
 
     def get(self, request):
         courses = Course.objects.all()
-        serializer = CourseSerializer(courses, many=True)
+        serializer = CourseDetailSerializer(courses, many=True)
         return Response(serializer.data)
 
     def post(self, request):
@@ -278,7 +278,7 @@ class CourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseSerializer(course, data=request.data)
+        serializer = CourseDetailSerializer(course, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -288,7 +288,7 @@ class CourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseSerializer(course, data=request.data, partial=True)
+        serializer = CourseDetailSerializer(course, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
