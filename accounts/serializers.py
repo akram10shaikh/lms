@@ -163,3 +163,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 class ResendEmailSerializer(serializers.Serializer):
     email=serializers.EmailField()
 
+class UserMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'full_name']

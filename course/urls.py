@@ -18,7 +18,7 @@ from .views import (
     AuthorDetailAPIView, AuthorListCreateAPIView,
 
     #Enrollment
-    EnrollCourseAPIView, UserEnrollmentListAPIView
+    EnrollCourseAPIView, UserEnrollmentListAPIView, MyEnrollmentsAPIView, EnrollmentProgressUpdateView
 
 )
 
@@ -54,5 +54,9 @@ urlpatterns = [
     #Enrollment
     path('courses/<int:course_id>/enroll/', EnrollCourseAPIView.as_view(), name='enroll-course'),
     path('enrollments/', UserEnrollmentListAPIView.as_view(), name='user-enrollments'),
+    path('enrollment/update-progress/', EnrollmentProgressUpdateView.as_view(), name='update-enrollment-progress'),
+
+    #My Learnings
+    path('my-learnings/', MyEnrollmentsAPIView.as_view(), name='my-learnings'),
 ]
 

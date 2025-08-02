@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings  # For linking to your custom User model
 
+
+
 # Create your models here.
 #Categories (Areas of Interest)
 class Category(models.Model):
@@ -107,6 +109,9 @@ class Enrollment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='enrollments', on_delete=models.CASCADE)
     course = models.ForeignKey(Course, related_name='enrollments', on_delete=models.CASCADE)
     enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    progress_percent = models.FloatField(default=0.0)       #Used to show completion status on My Learnings page
+    last_watched_video = models.ForeignKey('content.Video', on_delete=models.SET_NULL, null=True, blank=True)     #Used to resume where left off
 
     class Meta:
         unique_together = ('user', 'course')

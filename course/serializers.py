@@ -2,7 +2,15 @@ from rest_framework import serializers
 from .models import Review, FAQ, Category, Course, Author, Enrollment, LearningPoint, CourseInclusion, CourseSection
 from django.contrib.auth import get_user_model
 from django.db.models import Avg
+from content.serializers import VideoMiniSerializer
+from content.models import Video
+from progress.utils import calculate_course_progress_percent
+from batch.serializers import BatchMiniSerializer
 
+class CourseMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
+        fields = ['id', 'title']
 
 User = get_user_model()
 
@@ -208,7 +216,56 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 class EnrollmentSerializer(serializers.ModelSerializer):
     course = CourseFilterSerializer(read_only=True)
     user = UserSerializer(read_only=True)
+    last_watched_video = VideoMiniSerializer(read_only=True)
+    batch = BatchMiniSerializer(read_only=True)
 
     class Meta:
         model = Enrollment
-        fields = ['id', 'user', 'course', 'enrolled_at']
+        fields = ['id', 'user', 'course', 'batch', 'enrolled_at', 'progress_percent', 'last_watched_video']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Dynamically calculate progress
+        data['progress_percent'] = calculate_course_progress_percent(
+            user=instance.user,
+            course=instance.course
+        )
+        return data
+
+# Updating the progress of a student enrolled in a course.
+class EnrollmentProgressUpdateSerializer(serializers.Serializer):
+    enrollment = serializers.IntegerField()
+    progress_percent = serializers.FloatField(min_value=0, max_value=100)
+    last_watched_video = serializers.IntegerField()
+
+    def validate(self, attrs):
+        request = self.context['request']
+        user = request.user
+        enrollment_id = attrs.get('enrollment')
+        video_id = attrs.get('last_watched_video')
+
+        try:
+            enrollment = Enrollment.objects.get(id=enrollment_id, user=user)
+        except Enrollment.DoesNotExist:
+            raise serializers.ValidationError("Enrollment not found or unauthorized.")
+
+        course = enrollment.course
+
+        try:
+            video = Video.objects.get(id=video_id, course=course)
+        except Video.DoesNotExist:
+            raise serializers.ValidationError("Video not found in the enrolled course.")
+
+        attrs['enrollment'] = enrollment
+        attrs['video'] = video
+        return attrs
+
+    def save(self, **kwargs):
+        enrollment = self.validated_data['enrollment']
+        video = self.validated_data['video']
+        progress_percent = self.validated_data['progress_percent']
+
+        enrollment.progress_percent = progress_percent
+        enrollment.last_watched_video = video
+        enrollment.save()
+        return enrollment

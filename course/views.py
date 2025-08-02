@@ -2,12 +2,14 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Avg
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from accounts.permissions import IsAdmin, IsStaff
+from content.models import Video
 from .models import Category, Course, Review, FAQ, Enrollment, Author
 from .serializers import (
     CategorySerializer,
@@ -16,7 +18,7 @@ from .serializers import (
     ReviewSerializer,
     CreateReviewSerializer,
     FAQSerializer,
-    CreateFAQSerializer, EnrollmentSerializer, AuthorSerializer
+    CreateFAQSerializer, EnrollmentSerializer, AuthorSerializer, EnrollmentProgressUpdateSerializer
 )
 
 User = get_user_model()
@@ -317,6 +319,13 @@ class EnrollCourseAPIView(APIView):
         serializer = EnrollmentSerializer(enrollment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+# List of Enrollments for the currently logged-in user ("My Learnings")
+class MyEnrollmentsAPIView(generics.ListAPIView):
+    serializer_class = EnrollmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Enrollment.objects.filter(user=self.request.user).select_related('course', 'last_watched_video')
 
 # List enrolled courses for the admin and staff
 
@@ -328,6 +337,19 @@ class UserEnrollmentListAPIView(generics.ListAPIView):
         if self.request.user.role in ['admin', 'staff']:
             return Enrollment.objects.select_related('course', 'user').all()
         raise PermissionDenied("Only staff or admin can view enrollments.")
+
+# To update a student's progress in a course they are enrolled in.
+class EnrollmentProgressUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        serializer = EnrollmentProgressUpdateSerializer(data=request.data, context={'request': request})
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        return Response({"message": "Enrollment progress updated"}, status=status.HTTP_200_OK)
 
 
 # ---------------- AUTHOR VIEWS ----------------

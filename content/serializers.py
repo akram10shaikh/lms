@@ -10,3 +10,8 @@ class VideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
         fields = '__all__'
+
+class VideoMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = ['id', 'title', 'duration']
