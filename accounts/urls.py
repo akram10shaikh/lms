@@ -8,7 +8,7 @@ from .views import (
     GoogleLoginView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
-    ResendEmailVerificationView,
+    ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,
 )
 
 urlpatterns = [
@@ -29,6 +29,13 @@ urlpatterns = [
     # JWT Token URLs
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # Change password
+    path("change-password/",ChangePasswordView.as_view(),name="change-password"),
+
+    # Staff
+    path('staffs/',StaffListCreateAPIView.as_view(),name='staff-list-create'),
+    path('staffs/<int:pk>/',StaffDetailAPIView.as_view(),name='staff-detail'),
 ]
 
 

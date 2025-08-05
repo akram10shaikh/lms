@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
+from .models import CustomUser, StaffProfile
+
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
@@ -19,8 +20,21 @@ class CustomUserAdmin(UserAdmin):
             "fields": ("email", "full_name", "phone_number","date_of_birth", "role", "password1", "password2", "is_active", "is_staff"),
         }),
     )
-     
+
     def has_change_permission(self, request, obj=None):
-        return True
+        if request.user.is_superuser or (request.user.role in ['staff', 'admin']):
+            return True
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.is_superuser:
+            return False
+        return super().has_delete_permission(request, obj)
 
 admin.site.register(CustomUser, CustomUserAdmin)
+class StaffProfileAdmin(admin.ModelAdmin): # updated
+    def get_queryset(self, request):
+        qs=super().get_queryset(request)
+        return qs.filter(user__role='staff')
+
+admin.site.register(StaffProfile,StaffProfileAdmin)

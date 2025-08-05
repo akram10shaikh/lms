@@ -19,22 +19,21 @@ class AuthorAdmin(admin.ModelAdmin):
 # ---------- COURSE ----------
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = (
+    list_display = [
         'id',
         'title',
         'author',
         'average_rating',
         'category',
-        'old_price',
-        'current_price',
         'duration',
         'is_trending',
         'is_new',
         'created_at',
-        'special_tag'
-    )
+        'special_tag',
+        "is_archived"
+    ]
     list_filter = ('category', 'is_trending', 'is_new')
-    search_fields = ('title', 'author__name')  # updated for foreign key author
+    search_fields = ('title', 'author__name')
     ordering = ('-created_at',)
 
     def average_rating(self, obj):
@@ -55,7 +54,7 @@ class ReviewAdmin(admin.ModelAdmin):
 # ---------- FAQ ----------
 @admin.register(FAQ)
 class FAQAdmin(admin.ModelAdmin):
-    list_display = ('user', 'course', 'question', 'created_at')
+    list_display = ('question', 'created_at')
     search_fields = ('question', 'user__email', 'course__title')
     ordering = ('-created_at',)
 

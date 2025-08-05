@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from .models import Review, FAQ, Category, Course, Author, Enrollment, LearningPoint, CourseInclusion, CourseSection
 from django.contrib.auth import get_user_model
@@ -18,7 +19,7 @@ User = get_user_model()
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = '__all__'
+        exclude=["created_at"]
 
     def validate_name(self, value):
         if Category.objects.filter(name=value).exists():
@@ -29,33 +30,12 @@ class CategorySerializer(serializers.ModelSerializer):
 class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
-        fields = ['id', 'name', 'bio','image']
+        fields = ['id', 'name', 'bio','image','organization']
 
-# ---------- Course ----------
-# class CourseSerializer(serializers.ModelSerializer):
-#     rating = serializers.SerializerMethodField()
-#     category = serializers.SlugRelatedField(slug_field='name', queryset=Category.objects.all())
-#     special_tag = serializers.SerializerMethodField()
-#     author = AuthorSerializer(read_only=True)
-#     author_id = serializers.PrimaryKeyRelatedField(
-#         queryset=Author.objects.all(),
-#         source='author',
-#         write_only=True
-#     )
-
-#     class Meta:
-#         model = Course
-#         fields = '__all__'
-
-#     def get_rating(self, obj):
-#         avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
-#         return round(avg_rating or 0, 1)
-
-#     def get_special_tag(self, obj):
-#         return obj.get_special_tag_display()
 
 class CourseFilterSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
     special_tag = serializers.SerializerMethodField()
     author = AuthorSerializer(read_only=True)
 
@@ -67,18 +47,24 @@ class CourseFilterSerializer(serializers.ModelSerializer):
             'thumbnail',
             'author',
             'duration',
-            'current_price',
-            'old_price',
+            'original_price',
+            'discounted_price',
             'rating',
-            'special_tag',
+            'rating_count',
+            'special_tag'
         ]
 
     def get_rating(self, obj):
         avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
         return round(avg_rating or 0, 1)
 
+    def get_rating_count(self, obj):
+        return obj.reviews.count()
+
     def get_special_tag(self, obj):
-        return obj.get_special_tag_display()
+        tag = obj.get_special_tag_display()
+        return tag if obj.special_tag != 'none' else None
+
 
 # ---------- User ----------
 class UserSerializer(serializers.ModelSerializer):
@@ -92,7 +78,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'user', 'course', 'rating', 'feedback', 'created_at']
+        fields = ['id', 'user', 'course', 'rating', 'feedback']
         read_only_fields = ['created_at', 'updated_at']
 
     def validate_rating(self, value):
@@ -114,26 +100,19 @@ class CreateReviewSerializer(serializers.ModelSerializer):
 
 
 # ---------- FAQ ----------
-class FAQSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
 
+class FAQSerializer(serializers.ModelSerializer):
     class Meta:
         model = FAQ
-        fields = ['id', 'user', 'course', 'question', 'answer', 'created_at']
+        fields = ['id', 'question', 'answer']
         read_only_fields = ['created_at']
+
 
 class CreateFAQSerializer(serializers.ModelSerializer):
     class Meta:
         model = FAQ
-        fields = ['course', 'question', 'answer']
+        fields = ['question', 'answer']
 
-    def validate(self, data):
-        user = self.context['request'].user
-        course = data['course']
-        question = data['question']
-        if FAQ.objects.filter(user=user, course=course, question__iexact=question).exists():
-            raise serializers.ValidationError("You have already submitted this question for this course.")
-        return data
 
 #----course specific-----
 class LearningPointSerializer(serializers.ModelSerializer):
@@ -150,9 +129,9 @@ class CourseInclusionSerializer(serializers.ModelSerializer):
 class CourseSectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseSection
-        fields = ['title', 'description']
+        fields = ['title', 'description','file']
 
-#--course details---
+
 class CourseDetailSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(slug_field='name', queryset=Category.objects.all())
     author = AuthorSerializer(read_only=True)
@@ -164,14 +143,17 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
     reviews = ReviewSerializer(many=True, read_only=True)
     faqs = FAQSerializer(many=True, read_only=True)
-    rating = serializers.SerializerMethodField()
+
+    average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
     special_tag = serializers.SerializerMethodField()
     is_enrolled = serializers.SerializerMethodField()
+    is_discount_active = serializers.SerializerMethodField()
+    discount_days_left_text = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = '__all__'
+        exclude = ['created_at', 'updated_at']
 
     def create(self, validated_data):
         learning_points_data = validated_data.pop('learning_points')
@@ -180,19 +162,23 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
         course = Course.objects.create(**validated_data)
 
-        # Create related items
         for point_data in learning_points_data:
             LearningPoint.objects.create(course=course, **point_data)
-
         for item_data in inclusions_data:
             CourseInclusion.objects.create(course=course, **item_data)
-
         for section_data in sections_data:
             CourseSection.objects.create(course=course, **section_data)
 
         return course
 
-    def get_rating(self, obj):
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+
+        # Optional: handle updating nested fields if needed (e.g., sections, inclusions)
+
+        return instance
+
+    def get_average_rating(self, obj):
         avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
         return round(avg_rating or 0, 1)
 
@@ -200,17 +186,22 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         return obj.reviews.count()
 
     def get_special_tag(self, obj):
-        return obj.get_special_tag_display()
+        return obj.get_special_tag_display() if hasattr(obj, 'get_special_tag_display') else None
 
     def get_is_enrolled(self, obj):
-        # user = self.context['request'].user
-        # if user.is_authenticated:
-        #     return Enrollment.objects.filter(user=user, course=obj).exists()
-        # return False
-        request = self.context.get('request', None)
+        request = self.context.get('request')
         if request and request.user.is_authenticated:
             return Enrollment.objects.filter(user=request.user, course=obj).exists()
         return False
+
+    def get_is_discount_active(self, obj):
+        return obj.discount_end_date and obj.discount_end_date >= timezone.now()
+
+    def get_discount_days_left_text(self, obj):
+        if obj.discount_end_date:
+            days_left = (obj.discount_end_date - timezone.now()).days
+            return f"{days_left} day(s) left" if days_left >= 0 else "Expired"
+        return ""
 
 #-----Enrollment-----
 class EnrollmentSerializer(serializers.ModelSerializer):
@@ -269,3 +260,50 @@ class EnrollmentProgressUpdateSerializer(serializers.Serializer):
         enrollment.last_watched_video = video
         enrollment.save()
         return enrollment
+
+    enrolled_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = Enrollment
+        fields = ['id', 'user', 'course', 'enrolled_at']
+
+
+class CourseListSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    author = AuthorSerializer(read_only=True)
+    average_rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+    is_discount_active = serializers.SerializerMethodField()
+    discount_days_left_text = serializers.SerializerMethodField()
+    special_tag = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = [
+            'id', 'title', 'thumbnail',
+            'original_price', 'discounted_price', 'discounted_percentage',
+            'is_discount_active', 'discount_days_left_text',
+            'category', 'author',
+            'average_rating', 'review_count',
+            'special_tag',"is_archived",
+        ]
+
+    def get_average_rating(self, obj):
+        avg_rating = obj.reviews.aggregate(avg=Avg('rating'))['avg']
+        return round(avg_rating or 0, 1)
+
+    def get_review_count(self, obj):
+        return obj.reviews.count()
+
+    def get_is_discount_active(self, obj):
+        return obj.discount_end_date and obj.discount_end_date >= timezone.now()
+
+    def get_discount_days_left_text(self, obj):
+        if obj.discount_end_date:
+            days_left = (obj.discount_end_date - timezone.now()).days
+            return f"{days_left} day(s) left" if days_left >= 0 else "Expired"
+        return ""
+
+    def get_special_tag(self, obj):
+        return obj.get_special_tag_display() if hasattr(obj, 'get_special_tag_display') else None
+
