@@ -14,4 +14,4 @@ venv/
 .idea/
 
 # Database
-db.sqlite3
+db.sqlite3db.sqlite3
