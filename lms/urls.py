@@ -26,4 +26,5 @@ urlpatterns = [
     path('progress/', include('progress.urls')),
     path('api/quiz/', include('quiz.urls')),
     path('api/assignment/', include('assignment.urls')),
+   path('notifications/', include('notifications.urls')),  
 ]
