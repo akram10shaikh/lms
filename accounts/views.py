@@ -98,28 +98,13 @@ class GoogleLoginView(APIView):
 # Password Reset Request
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
-    serializer_class=PasswordResetRequestSerializer
 
     def post(self, request):
-        email = request.data.get("email")
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=404)
-
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = token_generator.make_token(user)
-        reset_url = f"http://127.0.0.1:8000/accounts/password-reset-confirm/{uid}/{token}/"
-
-        send_mail(
-            "Reset your password",
-            f"Click the link to reset your password:\n{reset_url}",
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
-
-        return Response({"message": "Password reset email sent."})
+        serializer=PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message':'Password reset email sent.'},status=200)
+        return Response(serializer.errors,status=400)
 
 
 # Password Reset Confirm
