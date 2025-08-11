@@ -15,3 +15,13 @@ venv/
 
 # Database
 db.sqlite3db.sqlite3
+
+# Ignore editor swap and backup files
+*.swp
+serializers_BACKUP_*.py
+serializers_BASE_*.py
+serializers_LOCAL_*.py
+serializers_REMOTE_*.py
+
+# Ignore SQLite DB file
+db.sqlite3
