@@ -1,25 +1,31 @@
 from rest_framework import generics, permissions, status
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.db.models import Avg
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from accounts.permissions import IsAdmin, IsStaff
-from content.models import Video
+from content.models import Video, Syllabus, LiveSession
+from content.serializers import VideoMiniSerializer, SyllabusWithVideosSerializer, LiveSessionSerializer
+from progress.models import VideoProgress
+from progress.serializers import SyllabusProgressDetailSerializer
 from .models import Category, Course, Review, FAQ, Enrollment, Author
 from .serializers import (
     CategorySerializer,
     CourseDetailSerializer,
     CourseFilterSerializer,
+    CourseOverviewSerializer,
     ReviewSerializer,
     CreateReviewSerializer,
     FAQSerializer,
     CreateFAQSerializer, EnrollmentSerializer, AuthorSerializer, EnrollmentProgressUpdateSerializer
 )
+from .utils import is_user_enrolled
 
 User = get_user_model()
 
@@ -273,6 +279,12 @@ class CourseDetailAPIView(APIView):
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        user = request.user
+
+        if user.is_authenticated and hasattr(user, 'role') and user.role == 'student':
+            if not is_user_enrolled(user, course):
+                return Response({'detail': 'Access denied. You are not enrolled in this course.'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = CourseDetailSerializer(course, context={'request': request})
         return Response(serializer.data)
 
@@ -302,6 +314,73 @@ class CourseDetailAPIView(APIView):
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
         course.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class CourseOverviewView(generics.ListAPIView):
+    serializer_class = SyllabusProgressDetailSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        user = self.request.user
+
+        # Get the course
+        course = get_object_or_404(Course, id=course_id)
+
+        # Ensure student is enrolled
+        if user.role == 'student':
+            enrollment = Enrollment.objects.filter(user=user, course=course).exists()
+            if not enrollment:
+                raise PermissionDenied("You are not enrolled in this course.")
+
+        # If user is staff/admin, no need to be enrolled – just view with dummy Enrollment
+        return Syllabus.objects.filter(course=course).order_by('order')
+
+class DetailedCourseOverviewView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id):
+        user = request.user
+        course = get_object_or_404(Course, id=course_id)
+
+        # Access control
+        is_staff = user.is_staff or user.is_superuser
+        is_enrolled = Enrollment.objects.filter(user=user, course=course).exists()
+        if not is_staff and not is_enrolled:
+            return Response({"detail": "You are not enrolled in this course."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Course Overview section
+        course_data = CourseOverviewSerializer(course, context={"request": request}).data
+
+        # Current/last watched video
+        last_progress = VideoProgress.objects.filter(student=user, video__course=course).order_by('-last_watched_on').first()
+        current_video = last_progress.video if last_progress else Video.objects.filter(course=course).first()
+        current_video_data = VideoMiniSerializer(current_video).data if current_video else None
+
+        # Next video
+        all_videos = list(Video.objects.filter(course=course).order_by('id'))
+        try:
+            index = all_videos.index(current_video)
+            next_video = all_videos[index + 1] if index + 1 < len(all_videos) else None
+        except:
+            next_video = None
+        next_video_data = VideoMiniSerializer(next_video).data if next_video else None
+
+        # Chapter-wise syllabus
+        syllabus = Syllabus.objects.filter(course=course).prefetch_related('videos')
+        syllabus_data = SyllabusWithVideosSerializer(syllabus, many=True).data
+
+        # Upcoming live sessions
+        now = datetime.now()
+        live_sessions = LiveSession.objects.filter(batch__batch_specific_course=course, start_time__gte=now).order_by('start_time')
+        live_sessions_data = LiveSessionSerializer(live_sessions, many=True).data
+
+        return Response({
+            "course": course_data,
+            "current_video": current_video_data,
+            "next_video": next_video_data,
+            "syllabus": syllabus_data,
+            "live_sessions": live_sessions_data
+        })
 
 
 # Enroll in a course

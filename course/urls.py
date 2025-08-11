@@ -4,6 +4,8 @@ from .views import (
     CategoryDetailAPIView,
     CourseListCreateAPI,
     CourseDetailAPIView,
+    CourseOverviewView,
+    DetailedCourseOverviewView,
     TopNewCourseListAPIView,
     TopNewCourseDetailAPIView,
     TrendingCourseAPIView,
@@ -30,6 +32,8 @@ urlpatterns = [
     # Courses
     path('courses/', CourseListCreateAPI.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseDetailAPIView.as_view(), name='course-detail'),
+    path('course-overview/<int:course_id>/', CourseOverviewView.as_view(), name='course-overview'),
+    path('courses/<int:course_id>/overview/', DetailedCourseOverviewView.as_view(), name='detailed-course-overview'),
 
     # Top New Courses
     path('top-new/', TopNewCourseListAPIView.as_view(), name='top-new-courses'),

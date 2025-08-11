@@ -11,6 +11,8 @@ class Quiz(models.Model):
     total_marks = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    batch = models.ForeignKey('batch.Batch', on_delete=models.CASCADE, related_name='quizzes')
+    module = models.ForeignKey('content.Module', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     class Meta:
         verbose_name = "Quiz"
         verbose_name_plural = "Quizzes"

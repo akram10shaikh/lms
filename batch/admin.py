@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Batch, BatchStudent
+from .models import Batch, BatchStudent, BatchStaff
 from accounts.models import CustomUser
 
 @admin.register(Batch)
@@ -19,3 +19,9 @@ class BatchAdmin(admin.ModelAdmin):
 @admin.register(BatchStudent)
 class BatchStudentAdmin(admin.ModelAdmin):
     list_display = ('id', 'batch', 'student')
+
+
+@admin.register(BatchStaff)
+class BatchStaffAdmin(admin.ModelAdmin):
+    list_display = ('batch', 'staff', 'added_on')
+    search_fields = ('batch__batch_name', 'staff__email')

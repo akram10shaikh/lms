@@ -2,10 +2,14 @@ from rest_framework import serializers
 from .models import Review, FAQ, Category, Course, Author, Enrollment, LearningPoint, CourseInclusion, CourseSection
 from django.contrib.auth import get_user_model
 from django.db.models import Avg
-from content.serializers import VideoMiniSerializer
+from content.serializers import VideoMiniSerializer, VideoSerializer
 from content.models import Video
+from progress.models import SyllabusProgress
+from progress.serializers import SyllabusProgressSerializer
 from progress.utils import calculate_course_progress_percent
 from batch.serializers import BatchMiniSerializer
+
+
 
 class CourseMiniSerializer(serializers.ModelSerializer):
     class Meta:
@@ -80,11 +84,74 @@ class CourseFilterSerializer(serializers.ModelSerializer):
     def get_special_tag(self, obj):
         return obj.get_special_tag_display()
 
+class CourseOverviewSerializer(serializers.ModelSerializer):
+    videos = serializers.SerializerMethodField()
+    syllabus_progress = serializers.SerializerMethodField()
+    syllabus = serializers.SerializerMethodField()      # Full chapter-wise structure (modules with videos).
+    current_video = serializers.SerializerMethodField() # Last watched video by the student.
+    next_video = serializers.SerializerMethodField()    # The next unwatched video in the course.
+    live_sessions = serializers.SerializerMethodField() # All sessions related to the course.
+
+    class Meta:
+        model = Course
+        fields = ['id', 'title', 'description', 'videos', 'syllabus_progress', 'syllabus', 'current_video', 'next_video', 'live_sessions',]
+
+    def get_videos(self, obj):
+        from content.models import Video
+        videos = Video.objects.filter(course=obj)
+        from content.serializers import VideoSerializer
+        return VideoSerializer(videos, many=True).data
+
+    def get_syllabus_progress(self, obj):
+        user = self.context['request'].user
+        try:
+            progress = SyllabusProgress.objects.get(syllabus__course=obj, student=user)
+            from progress.serializers import SyllabusProgressSerializer
+            return SyllabusProgressSerializer(progress).data
+        except SyllabusProgress.DoesNotExist:
+            return None
+
+    def get_syllabus(self, obj):
+        from content.models import Syllabus, Video
+        from content.serializers import SyllabusWithVideosSerializer
+        syllabus_qs = Syllabus.objects.filter(course=obj).prefetch_related('videos')
+        return SyllabusWithVideosSerializer(syllabus_qs, many=True).data
+
+    def get_current_video(self, obj):
+        user = self.context['request'].user
+        from progress.models import VideoProgress
+        from content.serializers import VideoSerializer
+        vp = VideoProgress.objects.filter(video__course=obj, student=user).order_by('-last_watched_on').first()
+        if vp:
+            return VideoSerializer(vp.video).data
+        return None
+
+    def get_next_video(self, obj):
+        from content.models import Video
+        from content.serializers import VideoSerializer
+        from progress.models import VideoProgress
+        user = self.context['request'].user
+
+        # Get all videos in order
+        all_videos = Video.objects.filter(course=obj).order_by('id')
+        watched = VideoProgress.objects.filter(student=user, video__in=all_videos, is_completed=True).values_list(
+            'video_id', flat=True)
+        next_video = all_videos.exclude(id__in=watched).first()
+
+        if next_video:
+            return VideoSerializer(next_video).data
+        return None
+
+    def get_live_sessions(self, obj):
+        from content.models import LiveSession
+        from content.serializers import LiveSessionSerializer
+        return LiveSessionSerializer(LiveSession.objects.filter(batch__batch_specific_course=obj), many=True).data
+
 # ---------- User ----------
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email',"full_name"]  # Adjust if needed
+        fields = ['id', 'email',"full_name"]
 
 # ---------- Review ----------
 class ReviewSerializer(serializers.ModelSerializer):
@@ -244,10 +311,20 @@ class EnrollmentProgressUpdateSerializer(serializers.Serializer):
         enrollment_id = attrs.get('enrollment')
         video_id = attrs.get('last_watched_video')
 
-        try:
-            enrollment = Enrollment.objects.get(id=enrollment_id, user=user)
-        except Enrollment.DoesNotExist:
-            raise serializers.ValidationError("Enrollment not found or unauthorized.")
+        if user.is_superuser or (getattr(user, 'role', None) in ['admin', 'staff']):
+            try:
+                # if user.role in ['admin', 'staff']:
+                enrollment = Enrollment.objects.get(id=enrollment_id)
+            # else:
+            #     enrollment = Enrollment.objects.get(id=enrollment_id, user=user)
+            except Enrollment.DoesNotExist:
+                raise serializers.ValidationError("Enrollment not found or unauthorized.")
+
+        else:
+            try:
+                enrollment = Enrollment.objects.get(id=enrollment_id, user=user)
+            except Enrollment.DoesNotExist:
+                raise serializers.ValidationError("Enrollment not found or unauthorized.")
 
         course = enrollment.course
 
@@ -261,11 +338,11 @@ class EnrollmentProgressUpdateSerializer(serializers.Serializer):
         return attrs
 
     def save(self, **kwargs):
-        enrollment = self.validated_data['enrollment']
-        video = self.validated_data['video']
-        progress_percent = self.validated_data['progress_percent']
+            enrollment = self.validated_data['enrollment']
+            video = self.validated_data['video']
+            progress_percent = self.validated_data['progress_percent']
 
-        enrollment.progress_percent = progress_percent
-        enrollment.last_watched_video = video
-        enrollment.save()
-        return enrollment
+            enrollment.progress_percent = progress_percent
+            enrollment.last_watched_video = video
+            enrollment.save()
+            return enrollment

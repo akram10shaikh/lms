@@ -8,7 +8,7 @@ def calculate_course_progress_percent(user, course):
 
     completed = SyllabusProgress.objects.filter(
         student = user,
-        syllabus_course = course,
+        syllabus__course = course,
         is_completed = True
     ).count()
     return round((completed/total_syllabus)*100,2)

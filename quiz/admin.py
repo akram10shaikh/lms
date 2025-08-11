@@ -11,7 +11,14 @@ class QuizQuestionAdmin(admin.ModelAdmin):
     list_display = ['text', 'quiz', 'mark']
     inlines = [QuizOptionInline]  # This allows adding options directly when adding a question
 
-admin.site.register(Quiz)
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ('title', 'module', 'total_marks')
+    list_filter = ('module',)
+    search_fields = ('title', 'module__title')
+
+
 admin.site.register(QuizQuestion, QuizQuestionAdmin)
 admin.site.register(QuizOption)
 admin.site.register(QuizAttempt)

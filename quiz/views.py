@@ -2,7 +2,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated , AllowAny
 from .models import Quiz, QuizQuestion, QuizOption, QuizAttempt, QuizAnswer
-from .serializers import QuizSerializer, QuizListSerializer, SubmitQuizSerializer
+from .serializers import QuizSerializer, QuizListSerializer, SubmitQuizSerializer, QuizAttemptSerializer
 from django.shortcuts import get_object_or_404
 
 
@@ -63,3 +63,9 @@ class SubmitQuizAPIView(generics.GenericAPIView):
 
         return Response({'message': 'Quiz submitted successfully!', 'score': total_score}, status=status.HTTP_200_OK)
 
+class ListQuizAttemptsAPIView(generics.ListAPIView):
+    serializer_class = QuizAttemptSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return QuizAttempt.objects.filter(student=self.request.user).select_related('quiz')
