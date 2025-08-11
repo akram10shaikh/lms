@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     CategoryListCreateAPIView,
     CategoryDetailAPIView,
-    CourseListCreateAPI,
+    CourseListCreateAPIView,
     CourseDetailAPIView,
     CourseOverviewView,
     DetailedCourseOverviewView,
@@ -30,7 +30,7 @@ urlpatterns = [
     path('categories/<int:pk>/', CategoryDetailAPIView.as_view(), name='category-detail'),
 
     # Courses
-    path('courses/', CourseListCreateAPI.as_view(), name='course-list-create'),
+    path('courses/', CourseListCreateAPIView.as_view(), name='course-list-create'),
     path('courses/<int:pk>/', CourseDetailAPIView.as_view(), name='course-detail'),
     path('course-overview/<int:course_id>/', CourseOverviewView.as_view(), name='course-overview'),
     path('courses/<int:course_id>/overview/', DetailedCourseOverviewView.as_view(), name='detailed-course-overview'),

@@ -6,11 +6,13 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator as token_generator
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
-from .serializers import GoogleAuthSerializer
+
+from .models import StaffProfile
+from .serializers import GoogleAuthSerializer, StaffProfileSerializer, ChangePasswordSerializer
 from django.contrib.auth import login as django_login
 
 from .serializers import (
@@ -96,28 +98,13 @@ class GoogleLoginView(APIView):
 # Password Reset Request
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
-    serializer_class=PasswordResetRequestSerializer
 
     def post(self, request):
-        email = request.data.get("email")
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"error": "User not found."}, status=404)
-
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = token_generator.make_token(user)
-        reset_url = f"http://127.0.0.1:8000/accounts/password-reset-confirm/{uid}/{token}/"
-
-        send_mail(
-            "Reset your password",
-            f"Click the link to reset your password:\n{reset_url}",
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
-
-        return Response({"message": "Password reset email sent."})
+        serializer=PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message':'Password reset email sent.'},status=200)
+        return Response(serializer.errors,status=400)
 
 
 # Password Reset Confirm
@@ -169,3 +156,78 @@ class ResendEmailVerificationView(APIView):
         )
 
         return Response({"message": "Verification email resent successfully."})
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# -------Staff------------
+
+class StaffListCreateAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        staff_profiles = StaffProfile.objects.filter(user__role='staff')  # updated
+        serializer = StaffProfileSerializer(staff_profiles, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        user_id = request.data.get('user')
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        if StaffProfile.objects.filter(user=user).exists():
+            return Response({'error': 'Staff profile already exists for this user'}, status=400)
+
+        data = request.data.copy()
+        data['user'] = user.id
+        data['role'] = 'staff'  # updated
+        serializer = StaffProfileSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class StaffDetailAPIView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get_object(self, pk, role='user__staff'):  # updated
+        try:
+            return StaffProfile.objects.get(pk=pk)
+        except StaffProfile.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        profile = self.get_object(pk)
+        if not profile:
+            return Response({'error': 'Staff not found'}, status=404)
+        serializer = StaffProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        profile = self.get_object(pk)
+        if not profile:
+            return Response({'error': 'Staff not found'}, status=404)
+        serializer = StaffProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk):
+        profile = self.get_object(pk)
+        if not profile:
+            return Response({'error': 'Staff not found'}, status=404)
+        profile.delete()
+        return Response({'message': 'staff deleted'}, status=204)

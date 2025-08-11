@@ -15,6 +15,7 @@ from content.serializers import VideoMiniSerializer, SyllabusWithVideosSerialize
 from progress.models import VideoProgress
 from progress.serializers import SyllabusProgressDetailSerializer
 from .models import Category, Course, Review, FAQ, Enrollment, Author
+from .permissions import canArchiveCourse, canDeleteCourse, IsCourseManager
 from .serializers import (
     CategorySerializer,
     CourseDetailSerializer,
@@ -23,9 +24,14 @@ from .serializers import (
     ReviewSerializer,
     CreateReviewSerializer,
     FAQSerializer,
-    CreateFAQSerializer, EnrollmentSerializer, AuthorSerializer, EnrollmentProgressUpdateSerializer
+    CreateFAQSerializer,
+    EnrollmentSerializer,
+    AuthorSerializer,
+    EnrollmentProgressUpdateSerializer,
+    CourseListSerializer,
 )
 from .utils import is_user_enrolled
+
 
 User = get_user_model()
 
@@ -148,7 +154,7 @@ class TopNewCourseDetailAPIView(APIView):
         if not course:
             return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
         course.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Course deleted successfully'}, status=204)
 
 # ---------------- TRENDING COURSES ----------------
 
@@ -174,7 +180,7 @@ class TrendingCourseDetailAPIView(APIView):
         course = self.get_object(pk)
         if not course:
             return Response({'error': 'Trending course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseDetailSerializer(course)
+        serializer = CourseDetailSerializer(course, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # ---------------- REVIEW VIEWS ----------------
@@ -215,69 +221,43 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
 # ---------------- FAQ VIEWS ----------------
 
 class FAQListCreateView(generics.ListCreateAPIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def get_queryset(self):
-        queryset = FAQ.objects.all()
-        course_id = self.request.query_params.get('course_id')
-        if course_id:
-            queryset = queryset.filter(course_id=course_id)
-        return queryset
-
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return CreateFAQSerializer
-        return FAQSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    queryset = FAQ.objects.filter(is_active=True).order_by('-created_at')
+    serializer_class = FAQSerializer
+    permission_classes = [permissions.AllowAny]
 
 class FAQDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_update(self, serializer):
-        if serializer.instance.user != self.request.user:
-            raise PermissionDenied("You can only update your own FAQs")
-        serializer.save()
-
-    def perform_destroy(self, instance):
-        if instance.user != self.request.user:
-            raise PermissionDenied("You can only delete your own FAQs")
-        instance.delete()
+    permission_classes = [permissions.IsAdminUser]
 
 # ---------------- COURSE VIEWS ----------------
 
-class CourseListCreateAPI(APIView):
-    permission_classes = [permissions.AllowAny]
+class CourseListCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        courses = Course.objects.all()
-        serializer = CourseDetailSerializer(courses, many=True)
-        return Response(serializer.data)
+        courses = Course.objects.filter(is_archived=False)
+        serializer = CourseListSerializer(courses, many=True, context={'request': request})
+        return Response(serializer.data, status=200)
 
     def post(self, request):
-        serializer = CourseDetailSerializer(data=request.data, context={'request': request})  # Add context
+        if not IsCourseManager().has_permission(request, self):
+            return Response({'error': 'You do not have permission to create courses.'}, status=403)
+
+        serializer = CourseDetailSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            course = serializer.save()
+            course = serializer.save(created_by=request.user)
             return Response(CourseDetailSerializer(course, context={'request': request}).data, status=201)
         return Response(serializer.errors, status=400)
 
-
 class CourseDetailAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self, pk):
-        try:
-            return Course.objects.get(pk=pk)
-        except Course.DoesNotExist:
-            return None
+        return get_object_or_404(Course, pk=pk)
 
     def get(self, request, pk):
         course = self.get_object(pk)
-        if not course:
-            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
 
         user = request.user
 
@@ -290,30 +270,33 @@ class CourseDetailAPIView(APIView):
 
     def put(self, request, pk):
         course = self.get_object(pk)
-        if not course:
-            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseDetailSerializer(course, data=request.data)
+        if not IsCourseManager().has_permission(request, self):
+            return Response({'error': 'You do not have permission to edit courses.'}, status=403)
+
+        serializer = CourseDetailSerializer(course, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
     def patch(self, request, pk):
         course = self.get_object(pk)
-        if not course:
-            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = CourseDetailSerializer(course, data=request.data, partial=True)
+        if not IsCourseManager().has_permission(request, self):
+            return Response({'error': 'You do not have permission to edit courses.'}, status=403)
+
+        serializer = CourseDetailSerializer(course, data=request.data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=400)
 
     def delete(self, request, pk):
         course = self.get_object(pk)
-        if not course:
-            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not canDeleteCourse().has_object_permission(request, self, course):
+            return Response({'error': 'You are not allowed to delete this course.'}, status=403)
+
         course.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Course deleted successfully'}, status=204)
 
 class CourseOverviewView(generics.ListAPIView):
     serializer_class = SyllabusProgressDetailSerializer
@@ -323,16 +306,13 @@ class CourseOverviewView(generics.ListAPIView):
         course_id = self.kwargs['course_id']
         user = self.request.user
 
-        # Get the course
         course = get_object_or_404(Course, id=course_id)
 
-        # Ensure student is enrolled
         if user.role == 'student':
             enrollment = Enrollment.objects.filter(user=user, course=course).exists()
             if not enrollment:
                 raise PermissionDenied("You are not enrolled in this course.")
 
-        # If user is staff/admin, no need to be enrolled – just view with dummy Enrollment
         return Syllabus.objects.filter(course=course).order_by('order')
 
 class DetailedCourseOverviewView(APIView):
@@ -342,34 +322,28 @@ class DetailedCourseOverviewView(APIView):
         user = request.user
         course = get_object_or_404(Course, id=course_id)
 
-        # Access control
         is_staff = user.is_staff or user.is_superuser
         is_enrolled = Enrollment.objects.filter(user=user, course=course).exists()
         if not is_staff and not is_enrolled:
             return Response({"detail": "You are not enrolled in this course."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Course Overview section
         course_data = CourseOverviewSerializer(course, context={"request": request}).data
 
-        # Current/last watched video
         last_progress = VideoProgress.objects.filter(student=user, video__course=course).order_by('-last_watched_on').first()
         current_video = last_progress.video if last_progress else Video.objects.filter(course=course).first()
         current_video_data = VideoMiniSerializer(current_video).data if current_video else None
 
-        # Next video
         all_videos = list(Video.objects.filter(course=course).order_by('id'))
         try:
             index = all_videos.index(current_video)
             next_video = all_videos[index + 1] if index + 1 < len(all_videos) else None
-        except:
+        except Exception:
             next_video = None
         next_video_data = VideoMiniSerializer(next_video).data if next_video else None
 
-        # Chapter-wise syllabus
         syllabus = Syllabus.objects.filter(course=course).prefetch_related('videos')
         syllabus_data = SyllabusWithVideosSerializer(syllabus, many=True).data
 
-        # Upcoming live sessions
         now = datetime.now()
         live_sessions = LiveSession.objects.filter(batch__batch_specific_course=course, start_time__gte=now).order_by('start_time')
         live_sessions_data = LiveSessionSerializer(live_sessions, many=True).data
@@ -382,10 +356,9 @@ class DetailedCourseOverviewView(APIView):
             "live_sessions": live_sessions_data
         })
 
-
 # Enroll in a course
 class EnrollCourseAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, course_id):
         course = get_object_or_404(Course, id=course_id)
@@ -407,7 +380,6 @@ class MyEnrollmentsAPIView(generics.ListAPIView):
         return Enrollment.objects.filter(user=self.request.user).select_related('course', 'last_watched_video')
 
 # List enrolled courses for the admin and staff
-
 class UserEnrollmentListAPIView(generics.ListAPIView):
     serializer_class = EnrollmentSerializer
     permission_classes = [IsAdmin | IsStaff]
@@ -430,7 +402,6 @@ class EnrollmentProgressUpdateView(APIView):
         serializer.save()
         return Response({"message": "Enrollment progress updated"}, status=status.HTTP_200_OK)
 
-
 # ---------------- AUTHOR VIEWS ----------------
 
 class AuthorListCreateAPIView(generics.ListCreateAPIView):
@@ -442,3 +413,15 @@ class AuthorDetailAPIView(generics.RetrieveAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     permission_classes = [permissions.AllowAny]
+
+class CourseArchiveAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        course = get_object_or_404(Course, pk=pk)
+        if not canArchiveCourse().has_object_permission(request, self, course):
+            return Response({'error': 'You are not allowed to archive this course.'}, status=403)
+
+        course.is_archived = True
+        course.save()
+        return Response({'message': 'Course archived successfully.'})
