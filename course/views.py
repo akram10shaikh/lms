@@ -407,12 +407,12 @@ class EnrollmentProgressUpdateView(APIView):
 class AuthorListCreateAPIView(generics.ListCreateAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated,permissions.IsAdminUser]
 
-class AuthorDetailAPIView(generics.RetrieveAPIView):
+class AuthorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated,permissions.IsAdminUser]
 
 class CourseArchiveAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
