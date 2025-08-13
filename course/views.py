@@ -15,7 +15,7 @@ from content.serializers import VideoMiniSerializer, SyllabusWithVideosSerialize
 from progress.models import VideoProgress
 from progress.serializers import SyllabusProgressDetailSerializer
 from .models import Category, Course, Review, FAQ, Enrollment, Author
-from .permissions import canArchiveCourse, canDeleteCourse, IsCourseManager
+from .permissions import canArchiveCourse, canDeleteCourse, IsCourseManager, IsAdminUser
 from .serializers import (
     CategorySerializer,
     CourseDetailSerializer,
@@ -241,7 +241,7 @@ class CourseListCreateAPIView(APIView):
         return Response(serializer.data, status=200)
 
     def post(self, request):
-        if not IsCourseManager().has_permission(request, self):
+        if not IsCourseManager().has_permission(request, self) and not IsAdminUser().has_permission(request,self):
             return Response({'error': 'You do not have permission to create courses.'}, status=403)
 
         serializer = CourseDetailSerializer(data=request.data, context={'request': request})
@@ -270,7 +270,7 @@ class CourseDetailAPIView(APIView):
 
     def put(self, request, pk):
         course = self.get_object(pk)
-        if not IsCourseManager().has_permission(request, self):
+        if not IsCourseManager().has_permission(request, self) and not IsAdminUser().has_permission(request,self):
             return Response({'error': 'You do not have permission to edit courses.'}, status=403)
 
         serializer = CourseDetailSerializer(course, data=request.data, context={'request': request})
@@ -281,7 +281,7 @@ class CourseDetailAPIView(APIView):
 
     def patch(self, request, pk):
         course = self.get_object(pk)
-        if not IsCourseManager().has_permission(request, self):
+        if not IsCourseManager().has_permission(request, self) and not IsAdminUser().has_permission(request,self):
             return Response({'error': 'You do not have permission to edit courses.'}, status=403)
 
         serializer = CourseDetailSerializer(course, data=request.data, partial=True, context={'request': request})
@@ -407,12 +407,12 @@ class EnrollmentProgressUpdateView(APIView):
 class AuthorListCreateAPIView(generics.ListCreateAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.IsAuthenticated,permissions.IsAdminUser]
+    permission_classes = [permissions.AllowAny]
 
 class AuthorDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [permissions.IsAuthenticated,permissions.IsAdminUser]
+    permission_classes = [permissions.AllowAny]
 
 class CourseArchiveAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]

@@ -197,7 +197,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
     average_rating = serializers.SerializerMethodField()
     review_count = serializers.SerializerMethodField()
-    special_tag = serializers.SerializerMethodField()
+    special_tag = serializers.ChoiceField(choices=Course.BADGE_CHOICES,default='none')
     is_enrolled = serializers.SerializerMethodField()
     is_discount_active = serializers.SerializerMethodField()
     discount_days_left_text = serializers.SerializerMethodField()
@@ -234,8 +234,8 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     def get_review_count(self, obj):
         return obj.reviews.count()
 
-    def get_special_tag(self, obj):
-        return obj.get_special_tag_display() if hasattr(obj, 'get_special_tag_display') else None
+    #def get_special_tag(self, obj):
+    #    return obj.get_special_tag_display() if hasattr(obj, 'get_special_tag_display') else None
 
     def get_is_enrolled(self, obj):
         request = self.context.get('request')
@@ -251,6 +251,12 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             days_left = (obj.discount_end_date - timezone.now()).days
             return f"{days_left} day(s) left" if days_left >= 0 else "Expired"
         return ""
+    
+    # Add display name in output
+    def to_representation(self,instance):
+        data=super().to_representation(instance)
+        data['special_tag_display']=instance.get_special_tag_display()
+        return data
 
 #-----Enrollment-----
 class EnrollmentSerializer(serializers.ModelSerializer):
