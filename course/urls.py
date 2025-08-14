@@ -20,7 +20,8 @@ from .views import (
     AuthorDetailAPIView, AuthorListCreateAPIView,
 
     #Enrollment
-    EnrollCourseAPIView, UserEnrollmentListAPIView, MyEnrollmentsAPIView, EnrollmentProgressUpdateView
+    EnrollCourseAPIView, UserEnrollmentListAPIView, MyEnrollmentsAPIView, EnrollmentProgressUpdateView,
+    CourseArchiveAPIView,
 
 )
 
@@ -62,5 +63,8 @@ urlpatterns = [
 
     #My Learnings
     path('my-learnings/', MyEnrollmentsAPIView.as_view(), name='my-learnings'),
+
+    #Archive Course
+    path('courses/<int:pk>/archive/',CourseArchiveAPIView.as_view(),name='course-archive'),
 ]
 

@@ -228,7 +228,7 @@ class FAQListCreateView(generics.ListCreateAPIView):
 class FAQDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.AllowAny]
 
 # ---------------- COURSE VIEWS ----------------
 
@@ -259,11 +259,11 @@ class CourseDetailAPIView(APIView):
     def get(self, request, pk):
         course = self.get_object(pk)
 
-        user = request.user
+        # user = request.user
 
-        if user.is_authenticated and hasattr(user, 'role') and user.role == 'student':
-            if not is_user_enrolled(user, course):
-                return Response({'detail': 'Access denied. You are not enrolled in this course.'}, status=status.HTTP_403_FORBIDDEN)
+        # if user.is_authenticated and hasattr(user, 'role') and user.role == 'student':
+        #     if not is_user_enrolled(user, course):
+        #         return Response({'detail': 'Access denied. You are not enrolled in this course.'}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = CourseDetailSerializer(course, context={'request': request})
         return Response(serializer.data)
