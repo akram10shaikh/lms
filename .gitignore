@@ -24,4 +24,5 @@ serializers_LOCAL_*.py
 serializers_REMOTE_*.py
 
 # Ignore SQLite DB file
+
 db.sqlite3
