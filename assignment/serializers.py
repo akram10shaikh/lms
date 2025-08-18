@@ -10,6 +10,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
         fields = '__all__'
+        read_only_fields = ['created_by', 'created_at']
 
 class AssignmentMiniSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,6 +21,7 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = ['id', 'assignment', 'file', 'submitted_at']
+<<<<<<< HEAD
         read_only_fields = ['submitted_at']
 
 class AssignmentSubmissionListSerializer(serializers.ModelSerializer):
@@ -27,3 +29,6 @@ class AssignmentSubmissionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = ['id', 'assignment', 'file', 'submitted_at']
+=======
+        read_only_fields = ['student','submitted_at']
+>>>>>>> 7c9eb4b (Added assignment APIs with create, list, update, delete, submit, and my-submissions endpoints)

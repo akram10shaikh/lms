@@ -134,7 +134,7 @@ class SuspendedBatchStudentListView(generics.ListAPIView):
             return queryset
 
         # If staff, show only suspended students from batches they manage
-        if user.role == "staff":
+        if user.role == "staff" or user.is_staff:
             return queryset.filter(batch__batch_staff__staff=user)
 
         # If student, show only their own suspension record
