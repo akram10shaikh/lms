@@ -9,7 +9,7 @@ User = get_user_model()
 
 class Assignment(models.Model):
     course = models.ForeignKey('course.Course', on_delete=models.CASCADE, related_name='assignment')
-    batch = models.ForeignKey('batch.Batch', on_delete=models.CASCADE, related_name='assignments')
+    batch = models.ForeignKey('batch.Batch', on_delete=models.CASCADE, related_name='assignments',blank=True,null=True)
     syllabus = models.ForeignKey(Syllabus, on_delete=models.SET_NULL, null=True, blank=True, related_name='assignments')
     title = models.CharField(max_length=255)
     description = models.TextField()

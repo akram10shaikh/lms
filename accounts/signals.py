@@ -27,7 +27,7 @@ def assign_user_group(sender, instance, created, **kwargs):
             raise ValueError(f"Invalid role '{instance.role}' for user {instance.email}")
 
 
-@receiver(post_save,sender=settings.AUTH_USER_MODEL)
-def create_staff_profile(sender,instance,created,**kwargs):
-    if created and instance.is_staff:
-        StaffProfile.objects.create(user=instance)
+@receiver(post_save,sender=CustomUser)
+def create_or_update_staff_profile(sender,instance,created,**kwargs):
+    if instance.is_staff:
+        StaffProfile.objects.get_or_create(user=instance)
