@@ -14,6 +14,7 @@ class Assignment(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     due_date = models.DateTimeField()
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_assignment')
     created_at = models.DateTimeField(auto_now_add=True)
     module = models.ForeignKey('content.Module', on_delete=models.SET_NULL, null=True, blank=True, related_name='assignments')
 
