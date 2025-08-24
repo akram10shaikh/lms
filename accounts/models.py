@@ -53,6 +53,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.role})"
+
+    def get_full_name(self):
+        return self.full_name or self.email
     
 class StaffProfile(models.Model):
     user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="staffprofile")
