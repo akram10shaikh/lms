@@ -22,7 +22,8 @@ from .serializers import (
     TokenSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
-    ResendEmailSerializer
+    ResendEmailSerializer,
+    AccountSettingsSerializer
 )
 
 User = get_user_model()
@@ -231,3 +232,10 @@ class StaffDetailAPIView(APIView):
             return Response({'error': 'Staff not found'}, status=404)
         profile.delete()
         return Response({'message': 'staff deleted'}, status=204)
+    
+class AccountSettingsView(generics.RetrieveUpdateAPIView):
+    serializer_class=AccountSettingsSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user

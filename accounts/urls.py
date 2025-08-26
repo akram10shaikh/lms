@@ -8,7 +8,7 @@ from .views import (
     GoogleLoginView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
-    ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,
+    ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,AccountSettingsView
 )
 
 urlpatterns = [
@@ -36,6 +36,9 @@ urlpatterns = [
     # Staff
     path('staffs/',StaffListCreateAPIView.as_view(),name='staff-list-create'),
     path('staffs/<int:pk>/',StaffDetailAPIView.as_view(),name='staff-detail'),
+
+    # Account settings
+    path('settings/account/',AccountSettingsView.as_view(),name='account-settings'),
 ]
 
 

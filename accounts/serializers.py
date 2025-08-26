@@ -217,3 +217,10 @@ class StaffProfileSerializer(serializers.ModelSerializer):
         model = StaffProfile
         fields = '__all__'
 
+# ----------- Account settings ------------------------------
+class AccountSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=['id','full_name','email','time_zone','language']
+        read_only_fields=['email']
+

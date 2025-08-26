@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+import pytz
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -37,6 +38,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=100, blank=True)
     phone_number=models.CharField(max_length=15, unique=True, blank=True, null=True)
+
+    time_zone=models.CharField(
+        max_length=100,
+        choices=[(tz, tz) for tz in pytz.common_timezones],
+        blank=True,null=True
+        )
+    language=models.CharField(max_length=50,blank=True,null=True,default="en")
+
     date_of_birth=models.DateField(null=True,blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="student")
 
