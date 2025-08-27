@@ -8,7 +8,8 @@ from .views import (
     GoogleLoginView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
-    ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,AccountSettingsView
+    ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,
+    AccountSettingsView,NameVerificationView,ApproveNameVerificationView
 )
 
 urlpatterns = [
@@ -39,6 +40,10 @@ urlpatterns = [
 
     # Account settings
     path('settings/account/',AccountSettingsView.as_view(),name='account-settings'),
+
+    # Name verification
+    path('settings/name-verification/',NameVerificationView.as_view(),name='name-verification'),
+    path('settings/name-verification/<int:user_id>/approve/',ApproveNameVerificationView.as_view(),name="approve-name-verification"),
 ]
 
 

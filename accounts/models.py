@@ -75,3 +75,18 @@ class StaffProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - Staff Profile"
+    
+class NameVerification(models.Model):
+    STATUS_CHOICES=[
+        ('pending','Pending'),
+        ('approved','Approved'),
+        ('rejected','Rejected'),
+    ]
+
+    user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='name_verification')
+    legal_name=models.CharField(max_length=150)
+    status=models.CharField(max_length=20,choices=STATUS_CHOICES,default='pending')
+    verified_at=models.DateTimeField(blank=True,null=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.status}"
