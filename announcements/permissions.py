@@ -6,11 +6,14 @@ class CanManageAnnouncements(permissions.BasePermission):
         user = request.user
         if not user.is_authenticated:
             return False
-        # Admins always allowed
+
         if user.is_superuser:
             return True
-        # Staff with announcement access
-        return hasattr(user, "staffprofile") and user.staffprofile.has_announcement_management_access
+
+        # staff profile check
+        return hasattr(user, "staffprofile") and getattr(
+            user.staffprofile, "has_announcement_management_access", False
+        )
 
 
 class CanSendLimitedAnnouncements(permissions.BasePermission):
@@ -19,7 +22,8 @@ class CanSendLimitedAnnouncements(permissions.BasePermission):
         user = request.user
         if not user.is_authenticated:
             return False
-        return (
-            hasattr(user, "staffprofile")
-            and user.staffprofile.has_content_management_access
+
+        # staff profile check
+        return hasattr(user, "staffprofile") and getattr(
+            user.staffprofile, "has_content_management_access", False
         )
