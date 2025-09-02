@@ -24,3 +24,4 @@ urlpatterns = [
     path('archived-batches/', ArchivedBatchListView.as_view(), name='archived-batch-list'),
     path('active-batches/', ActiveBatchListView.as_view(), name='active-batches'),
 ]
+

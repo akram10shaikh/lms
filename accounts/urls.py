@@ -9,6 +9,7 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,
+    AccountSettingsView,NameVerificationView,ApproveNameVerificationView
 )
 
 urlpatterns = [
@@ -36,6 +37,13 @@ urlpatterns = [
     # Staff
     path('staffs/',StaffListCreateAPIView.as_view(),name='staff-list-create'),
     path('staffs/<int:pk>/',StaffDetailAPIView.as_view(),name='staff-detail'),
+
+    # Account settings
+    path('settings/account/',AccountSettingsView.as_view(),name='account-settings'),
+
+    # Name verification
+    path('settings/name-verification/',NameVerificationView.as_view(),name='name-verification'),
+    path('settings/name-verification/<int:user_id>/approve/',ApproveNameVerificationView.as_view(),name="approve-name-verification"),
 ]
 
 

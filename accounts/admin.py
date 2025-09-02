@@ -1,12 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, StaffProfile
+from .models import CustomUser, StaffProfile,NameVerification
 
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ("email", "full_name","phone_number","date_of_birth", "role", "is_active", "is_staff")
-    list_filter = ("role", "is_active", "is_staff")
+    list_display = ("email", "full_name","phone_number","time_zone","date_of_birth", "role", "is_active", "is_staff")
+    list_filter = ("role", "is_active", "is_staff","time_zone")
     search_fields = ("email", "full_name", "phone_number")
     ordering = ("email",)
     fieldsets = (
@@ -17,7 +17,7 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("email", "full_name", "phone_number","date_of_birth", "role", "password1", "password2", "is_active", "is_staff"),
+            "fields": ("email", "full_name", "phone_number","date_of_birth", "role", "password1", "password2", "time_zone","language", "is_active", "is_staff"),
         }),
     )
 
@@ -38,3 +38,5 @@ class StaffProfileAdmin(admin.ModelAdmin): # updated
         return qs.filter(user__role='staff')
 
 admin.site.register(StaffProfile,StaffProfileAdmin)
+
+admin.site.register(NameVerification)

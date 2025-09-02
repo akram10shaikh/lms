@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+import pytz
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -37,6 +38,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=100, blank=True)
     phone_number=models.CharField(max_length=15, unique=True, blank=True, null=True)
+
+    time_zone=models.CharField(
+        max_length=100,
+        choices=[(tz, tz) for tz in pytz.common_timezones],
+        blank=True,null=True
+        )
+    language=models.CharField(max_length=50,blank=True,null=True,default="en")
+
     date_of_birth=models.DateField(null=True,blank=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="student")
 
@@ -53,6 +62,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.email} ({self.role})"
+
+    def get_full_name(self):
+        return self.full_name or self.email
     
 class StaffProfile(models.Model):
     user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name="staffprofile")
@@ -63,3 +75,18 @@ class StaffProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - Staff Profile"
+    
+class NameVerification(models.Model):
+    STATUS_CHOICES=[
+        ('pending','Pending'),
+        ('approved','Approved'),
+        ('rejected','Rejected'),
+    ]
+
+    user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,related_name='name_verification')
+    legal_name=models.CharField(max_length=150)
+    status=models.CharField(max_length=20,choices=STATUS_CHOICES,default='pending')
+    verified_at=models.DateTimeField(blank=True,null=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.status}"

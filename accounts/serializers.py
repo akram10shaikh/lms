@@ -11,7 +11,7 @@ import requests
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 
-from accounts.models import StaffProfile
+from accounts.models import StaffProfile,NameVerification
 
 User = get_user_model()
 
@@ -217,3 +217,16 @@ class StaffProfileSerializer(serializers.ModelSerializer):
         model = StaffProfile
         fields = '__all__'
 
+# ----------- Account settings ------------------------------
+class AccountSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=['id','full_name','email','time_zone','language']
+        read_only_fields=['email']
+
+# -------- Name verification for certificates -----------------
+class NameVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=NameVerification
+        fields=['legal_name','status','verified_at']
+        read_only_fields=['status','verified_at']

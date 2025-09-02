@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'quiz',
     'assignment',
     'notifications',
+    'chats',
+    'announcements',
 ]
 
 REST_FRAMEWORK = {

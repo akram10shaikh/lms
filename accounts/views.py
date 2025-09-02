@@ -10,8 +10,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
-
-from .models import StaffProfile
+from .permissions import IsStaff
+from .models import StaffProfile,NameVerification
 from .serializers import GoogleAuthSerializer, StaffProfileSerializer, ChangePasswordSerializer
 from django.contrib.auth import login as django_login
 
@@ -22,8 +22,12 @@ from .serializers import (
     TokenSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
-    ResendEmailSerializer
+    ResendEmailSerializer,
+    AccountSettingsSerializer,
+    NameVerificationSerializer
 )
+
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -172,7 +176,7 @@ class ChangePasswordView(APIView):
 # -------Staff------------
 
 class StaffListCreateAPIView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser,IsStaff]
 
     def get(self, request):
         staff_profiles = StaffProfile.objects.filter(user__role='staff')  # updated
@@ -231,3 +235,39 @@ class StaffDetailAPIView(APIView):
             return Response({'error': 'Staff not found'}, status=404)
         profile.delete()
         return Response({'message': 'staff deleted'}, status=204)
+    
+class AccountSettingsView(generics.RetrieveUpdateAPIView):
+    serializer_class=AccountSettingsSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+    
+# Name verification for Certificate
+class NameVerificationView(generics.RetrieveUpdateAPIView):
+    serializer_class=NameVerificationSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_object(self):
+        obj, created=NameVerification.objects.get_or_create(user=self.request.user)
+        return obj
+    
+# Admin approval for Name Verification
+class ApproveNameVerificationView(APIView):
+    permission_classes=[IsAdminUser]
+
+    def post(self,request,user_id):
+        try:
+            verification=NameVerification.objects.get(user_id=user_id)
+            action=request.data.get("action") # approve | reject | pending
+            
+            if action=="approve":
+                verification.status="approved"
+                verification.verified_at=timezone.now()
+            elif action=="reject":
+                verification.status="rejected"
+
+            verification.save()
+            return Response({"status":verification.status})
+        except NameVerification.DoesNotExist:
+            return Response({"error":"Request not found"}, status=404)

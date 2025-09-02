@@ -24,7 +24,15 @@ urlpatterns = [
     path('batches/', include('batch.urls')),
     path('content/', include('content.urls')),
     path('progress/', include('progress.urls')),
+<<<<<<< HEAD
     path('quiz/', include('quiz.urls')),
     path('assignment/', include('assignment.urls')),
    path('notifications/', include('notifications.urls')),  
+=======
+    path('api/quiz/', include('quiz.urls')),
+    path('api/assignment/', include('assignment.urls')),
+   path('notifications/', include('notifications.urls')),
+    path('chats/',include('chats.urls')),
+    path('announcements/',include('announcements.urls')),
+>>>>>>> 16218d27410f71c0edef327e1a51375a248eaf50
 ]
