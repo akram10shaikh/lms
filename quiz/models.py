@@ -13,15 +13,11 @@ class Quiz(models.Model):
     passing_marks = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-<<<<<<< HEAD
-
-=======
     batch = models.ForeignKey('batch.Batch', on_delete=models.CASCADE, related_name='quizzes',null=True,blank=True)
     module = models.ForeignKey('content.Module', on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
     class Meta:
         verbose_name = "Quiz"
         verbose_name_plural = "Quizzes"
->>>>>>> 16218d27410f71c0edef327e1a51375a248eaf50
     def __str__(self):
         return f"{self.title} ({self.course.title})"
 
