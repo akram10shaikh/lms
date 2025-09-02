@@ -11,7 +11,7 @@ import requests
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 
-from accounts.models import StaffProfile,NameVerification
+from accounts.models import StaffProfile,NameVerification,TwoFactorAuth
 
 User = get_user_model()
 
@@ -230,3 +230,10 @@ class NameVerificationSerializer(serializers.ModelSerializer):
         model=NameVerification
         fields=['legal_name','status','verified_at']
         read_only_fields=['status','verified_at']
+
+# ------- Two Factor Authentication --------------------
+class TwoFactorAuthSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=TwoFactorAuth
+        fields=['is_enabled']
+        read_only_fields=[]

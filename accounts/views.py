@@ -11,8 +11,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 from .permissions import IsStaff
-from .models import StaffProfile,NameVerification
-from .serializers import GoogleAuthSerializer, StaffProfileSerializer, ChangePasswordSerializer
+from .models import StaffProfile,NameVerification,TwoFactorAuth
+from .serializers import GoogleAuthSerializer, StaffProfileSerializer, ChangePasswordSerializer,TwoFactorAuthSerializer
 from django.contrib.auth import login as django_login
 
 from .serializers import (
@@ -28,6 +28,7 @@ from .serializers import (
 )
 
 from django.utils import timezone
+import random
 
 User = get_user_model()
 
@@ -271,3 +272,41 @@ class ApproveNameVerificationView(APIView):
             return Response({"status":verification.status})
         except NameVerification.DoesNotExist:
             return Response({"error":"Request not found"}, status=404)
+        
+# Enable/Disable 2FA
+class TwoFactorSettingsView(generics.RetrieveUpdateAPIView):
+    serializer_class=TwoFactorAuthSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get_object(self):
+        obj,created=TwoFactorAuth.objects.get_or_create(user=self.request.user)
+        return obj
+    
+# Send OTP (Email)
+class SendOTPView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self,request):
+        otp=str(random.randint(100000,999999))
+        request.session['2fa_otp']=otp
+
+        send_mail(
+            'Your 2FA Code',
+            f'Your OTP code is {otp}',
+            settings.DEFAULT_FROM_MAIL,
+            [request.user.email],
+            fail_silently=False,
+        )
+        return Response({"message": "OTP sent to your email"})
+    
+# verify OTP
+class VerifyOTPView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self,request):
+        user_otp=request.data.get("otp")
+        session_otp=request.session.get("2fa_otp")
+
+        if user_otp==session_otp:
+            return Response({"status": "verified"})
+        return Response({"status": "invalid"}, status=400)
