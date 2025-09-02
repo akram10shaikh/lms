@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, StaffProfile,NameVerification
+from .models import CustomUser, StaffProfile,NameVerification,TwoFactorAuth
 
 
 class CustomUserAdmin(UserAdmin):
@@ -40,3 +40,4 @@ class StaffProfileAdmin(admin.ModelAdmin): # updated
 admin.site.register(StaffProfile,StaffProfileAdmin)
 
 admin.site.register(NameVerification)
+admin.site.register(TwoFactorAuth)
