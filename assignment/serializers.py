@@ -1,36 +1,24 @@
 from rest_framework import serializers
-
-from content.models import Module
 from .models import Assignment, AssignmentSubmission
-from content.modules import ModuleMiniSerializer
 
-
+# 🔹 Assignment Serializer
 class AssignmentSerializer(serializers.ModelSerializer):
-    module = ModuleMiniSerializer(read_only=True)
-    module_id = serializers.PrimaryKeyRelatedField(queryset=Module.objects.all(), source='module', write_only=True)
-
     class Meta:
         model = Assignment
-        fields = '__all__'
-        read_only_fields = ['created_by', 'created_at']
+        fields = "__all__"
+        read_only_fields = ["created_by", "created_at"]
 
-
-class AssignmentMiniSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Assignment
-        fields = ['id', 'title', 'due_date']
-
-
+# 🔹 Submission Serializer (used when student submits)
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
-        fields = ['id', 'assignment', 'file', 'submitted_at']
-        read_only_fields = ['student', 'submitted_at']   # student auto-set, submitted_at auto-generated
+        fields = ["id", "assignment", "submitted_file", "submitted_text"]
 
-
+# 🔹 Submission List Serializer (used for viewing submissions / grading)
 class AssignmentSubmissionListSerializer(serializers.ModelSerializer):
-    assignment = AssignmentMiniSerializer()
+    student = serializers.StringRelatedField(read_only=True)
+    assignment = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = AssignmentSubmission
-        fields = ['id', 'assignment', 'file', 'submitted_at']
+        fields = ["id", "assignment", "student", "submitted_file", "submitted_text", "grade", "submitted_at"]
