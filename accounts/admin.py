@@ -5,7 +5,7 @@ from .models import CustomUser, StaffProfile,NameVerification
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ("email", "full_name","phone_number","time_zone","date_of_birth", "role", "is_active", "is_staff")
+    list_display = ("email", "full_name","phone_number","time_zone","date_of_birth", "role", "is_active", "is_staff","profile_image")
     list_filter = ("role", "is_active", "is_staff","time_zone")
     search_fields = ("email", "full_name", "phone_number")
     ordering = ("email",)

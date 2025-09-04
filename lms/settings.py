@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'notifications',
     'chats',
     'announcements',
+    'myprofile',
 ]
 
 REST_FRAMEWORK = {

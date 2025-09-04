@@ -164,7 +164,6 @@ class Enrollment(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
-
     progress_percent = models.FloatField(default=0.0)       #Used to show completion status on My Learnings page
     last_watched_video = models.ForeignKey('content.Video', on_delete=models.SET_NULL, null=True, blank=True)     #Used to resume where left off
 

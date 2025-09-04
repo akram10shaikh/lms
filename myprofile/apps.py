@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
-class AnnouncementsConfig(AppConfig):
+
+class MyprofileConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'announcements'
+    name = 'myprofile'
