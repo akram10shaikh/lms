@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import LiveSession, Video, Syllabus, Module
-from assignment.serializers import AssignmentMiniSerializer
+#from assignment.serializers import AssignmentMiniSerializer
 from .modules import ModuleMiniSerializer
 
 
@@ -32,7 +32,7 @@ class SyllabusWithVideosSerializer(serializers.ModelSerializer):
 
 class SyllabusWithContentSerializer(serializers.ModelSerializer):
     videos = VideoMiniSerializer(many=True, read_only=True)
-    assignments = AssignmentMiniSerializer(many=True, read_only=True)
+    #assignments = AssignmentMiniSerializer(many=True, read_only=True)
 
     class Meta:
         model = Syllabus

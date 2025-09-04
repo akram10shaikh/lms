@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 import pytz
 
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -92,3 +93,12 @@ class NameVerification(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.status}"
+    
+class TwoFactorAuth(models.Model):
+    user=models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name="two_factor")
+    is_enabled=models.BooleanField(default=False)
+    secret_key=models.CharField(max_length=50,blank=True,null=True) # for TOTP apps
+    backup_code=models.CharField(max_length=50,blank=True,null=True) # optional
+
+    def __str__(self):
+        return f"{self.user.email} - 2FA {'Enabled' if self.is_enabled else 'Disabled'}"

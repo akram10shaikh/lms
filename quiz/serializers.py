@@ -1,91 +1,55 @@
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-
-from content.models import Module
-from content.modules import ModuleMiniSerializer
 from .models import Quiz, QuizQuestion, QuizOption, QuizAttempt, QuizAnswer
-
 
 class QuizOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizOption
-        fields = ['id', 'text']
-
+        fields = ["id", "text", "is_correct"]  # is_correct only visible to admin
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
     options = QuizOptionSerializer(many=True, read_only=True)
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'text', 'mark', 'options']
-
+        fields = ["id", "text", "options"]
 
 class QuizSerializer(serializers.ModelSerializer):
     questions = QuizQuestionSerializer(many=True, read_only=True)
 
-    module = ModuleMiniSerializer(read_only=True)
-    module_id = serializers.PrimaryKeyRelatedField(
-        queryset=Module.objects.all(),
-        source='module',
-        write_only=True
-    )
-
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'duration', 'total_marks', 'is_active', 'questions']
+        fields = ["id", "course", "title", "duration", "total_marks", "passing_marks", "is_active", "questions"]
 
-
-class QuizListSerializer(serializers.ModelSerializer):
-    module = ModuleMiniSerializer(read_only=True)
-
+class QuizAnswerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Quiz
-        fields = ['id', 'title', 'duration', 'total_marks', 'is_active']
-
-
-class QuizAnswerSerializer(serializers.Serializer):
-    question = serializers.IntegerField()
-    selected_option = serializers.IntegerField()
-
-class SubmitQuizSerializer(serializers.Serializer):
-    quiz_id = serializers.IntegerField()
-    answers = QuizAnswerSerializer(many=True)
-
-    def validate(self, data):
-        quiz = get_object_or_404(Quiz, pk=data['quiz_id'], is_active=True)
-        data['quiz'] = quiz
-        return data
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        quiz = validated_data['quiz']
-        answers_data = validated_data['answers']
-        score = 0
-
-        attempt = QuizAttempt.objects.create(student=user, quiz=quiz)
-
-        for ans in answers_data:
-            question = get_object_or_404(QuizQuestion, id=ans['question'], quiz=quiz)
-            selected_option = get_object_or_404(QuizOption, id=ans['selected_option'], question=question)
-
-            is_correct = selected_option.is_correct
-            if is_correct:
-                score += question.mark
-
-            QuizAnswer.objects.create(
-                attempt=attempt,
-                question=question,
-                selected_option=selected_option,
-                is_correct=is_correct
-            )
-
-        attempt.score = score
-        attempt.save()
-        return attempt
+        model = QuizAnswer
+        fields = ["question", "selected_option"]
 
 class QuizAttemptSerializer(serializers.ModelSerializer):
-    quiz = QuizListSerializer()
+    answers = QuizAnswerSerializer(many=True, write_only=True)
 
     class Meta:
         model = QuizAttempt
-        fields = ['id', 'quiz', 'score', 'attempted_on']
+        fields = ["id", "quiz", "score", "completed", "answers"]
+        read_only_fields = ["score", "completed"]
+
+    def create(self, validated_data):
+        answers_data = validated_data.pop("answers")
+        student = self.context["request"].user
+        quiz = validated_data["quiz"]
+
+        attempt = QuizAttempt.objects.create(student=student, quiz=quiz)
+
+        score = 0
+        for answer in answers_data:
+            question = answer["question"]
+            option = answer["selected_option"]
+            QuizAnswer.objects.create(attempt=attempt, question=question, selected_option=option)
+
+            if option.is_correct:
+                score += 1
+
+        attempt.score = score
+        attempt.completed = True
+        attempt.save()
+        return attempt

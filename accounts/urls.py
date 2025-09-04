@@ -9,7 +9,8 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     ResendEmailVerificationView, ChangePasswordView, StaffListCreateAPIView, StaffDetailAPIView,
-    AccountSettingsView,NameVerificationView,ApproveNameVerificationView
+    AccountSettingsView,NameVerificationView,ApproveNameVerificationView,
+    TwoFactorSettingsView,SendOTPView,VerifyOTPView
 )
 
 urlpatterns = [
@@ -44,6 +45,11 @@ urlpatterns = [
     # Name verification
     path('settings/name-verification/',NameVerificationView.as_view(),name='name-verification'),
     path('settings/name-verification/<int:user_id>/approve/',ApproveNameVerificationView.as_view(),name="approve-name-verification"),
+
+    # Two Factor Verification
+    path('settings/2fa/',TwoFactorSettingsView.as_view(),name='two-factor-settings'),
+    path('settings/2fa/send-otp/',SendOTPView.as_view(),name='send-otp'),
+    path('settings/2fa/verify-otp/',VerifyOTPView.as_view(),name='verify-otp'),
 ]
 
 
