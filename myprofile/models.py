@@ -5,10 +5,9 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-User = settings.AUTH_USER_MODEL  # Reference to CustomUser
+User = settings.AUTH_USER_MODEL
 
 #Contact Information
-
 from django.conf import settings
 
 class ContactInfo(models.Model):
@@ -21,7 +20,6 @@ class ContactInfo(models.Model):
 
 
 # Work Experience
-
 class WorkExperience(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="work_experiences")
     institution_name = models.CharField(max_length=255)
@@ -69,7 +67,6 @@ class Education(models.Model):
 
 
 # Badges & Achievements
-
 class Badge(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="badges")
     title = models.CharField(max_length=255)
@@ -82,7 +79,6 @@ class Badge(models.Model):
 
 
 # Work Preferences
-
 class WorkPreference(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="work_preference")
     desired_role = models.CharField(max_length=255)

@@ -3,7 +3,6 @@ from django.conf import settings
 from accounts.models import CustomUser
 from course.models import Enrollment
 
-
 from .models import (
     ContactInfo, WorkExperience, Education,
     Badge, WorkPreference,
@@ -18,7 +17,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     profile_completion = serializers.SerializerMethodField()
     courses = serializers.SerializerMethodField()
 
-
     class Meta:
         model = CustomUser
         fields = [
@@ -28,22 +26,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["email", "role"]
 
     def get_courses(self, obj):
-        from course.models import Enrollment
-
         # Only courses that user has fully completed
         completed_enrollments = Enrollment.objects.filter(
             user=obj,
-            progress_percent=100.0,  # fully completed
+            progress_percent=100.0,
             is_active=True
         )
-        # Extract only the course titles
         course_titles = [e.course.title for e in completed_enrollments]
 
         return course_titles
 
     def get_profile_completion(self, obj):
         completion = 0
-        # Basic user info (40%)
         basic_fields = [
             obj.full_name, obj.phone_number, obj.profile_image,
             obj.time_zone, obj.language, obj.date_of_birth
@@ -51,35 +45,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if all(f not in [None, "", []] for f in basic_fields):
             completion += 40
 
-        # Contact Info (10%)
         if hasattr(obj, "contact_info") and (
                 obj.contact_info.github_url or obj.contact_info.linkedin_url
         ):
             completion += 10
 
-        # Work Experience (15%)
         if obj.work_experiences.exists():
             completion += 15
 
-        # Education (15%)
         if obj.educations.exists():
             completion += 15
 
-        # Courses (5%) -> check via Enrollment
         if Enrollment.objects.filter(user=obj).exists():
             completion += 5
 
-        # Badges (5%)
         if obj.badges.exists():
             completion += 5
 
-        # Work Preference (5%)
         if hasattr(obj, "work_preference") and (
                 obj.work_preference.desired_role or obj.work_preference.industry
         ):
             completion += 5
 
-        # Additional Info (resume or links) (5%)
         if hasattr(obj, "additional_info") and (
                 obj.additional_info.resume or obj.additional_info.links.exists()
         ):
